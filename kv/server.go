@@ -12,7 +12,7 @@ import (
 )
 
 type valueAndExpire struct {
-	value  string
+	value  *proto.OdsInfo
 	expire int64 //time of expiration
 }
 
@@ -147,14 +147,18 @@ func MakeKvServer(nodeName string, shardMap *ShardMap, clientPool ClientPool) *K
 		//server.ourShards[i] = struct{}{}
 	//}
 	go server.shardMapListenLoop()
-	go server.invalidateKVs()
+	if usingTtl{
+		go server.invalidateKVs()
+	}
 	server.handleShardMapUpdate(true)
 	return &server
 }
 
 func (server *KvServerImpl) Shutdown() {
 	server.shutdown <- struct{}{}
-	server.ttlShutdown <- struct{}{} //bottlenecks
+	if usingTtl{
+		server.ttlShutdown <- struct{}{} //bottlenecks
+	}
 	server.listener.Close()
 }
 
@@ -241,13 +245,15 @@ func (server *KvServerImpl) Get(
 
 	val, exists := server.shard[targetShard].data[key]
 	if !exists {
-		return &proto.GetResponse{Value: "", WasFound: false}, nil
+		return &proto.GetResponse{Value: nil, WasFound: false}, nil
 	}
-	now := time.Now()
-	timeLeft := val.expire - now.UnixMilli()
-	if timeLeft < 0{
-		//expired key
-		return &proto.GetResponse{Value: "", WasFound: false}, nil
+	if usingTtl{
+		now := time.Now()
+		timeLeft := val.expire - now.UnixMilli()
+		if timeLeft < 0{
+			//expired key
+			return &proto.GetResponse{Value: nil, WasFound: false}, nil
+		}
 	}
 
 	return &proto.GetResponse{Value: val.value, WasFound: true}, nil
@@ -257,6 +263,7 @@ func (server *KvServerImpl) Set(
 	ctx context.Context,
 	request *proto.SetRequest,
 ) (*proto.SetResponse, error) {
+	//only updates the part of the value associated with the provided node
 	logrus.WithFields(
 		logrus.Fields{"node": server.nodeName, "key": request.Key},
 	).Trace("node received Set() request")
@@ -283,8 +290,18 @@ func (server *KvServerImpl) Set(
 		return nil, status.Error(codes.NotFound, "server no longer hosts shard for this kv")
 	}
 	now := time.Now()
-	server.shard[targetShard].data[key] = valueAndExpire{request.Value, now.UnixMilli() + request.TtlMs}
-
+	_, exists := server.shard[targetShard].data[key]
+	if !exists {
+		server.shard[targetShard].data[key] = valueAndExpire{request.Value, now.UnixMilli() + request.TtlMs}
+	} else{
+		nodeToAdd := ""
+		completionStatusToAdd := false
+		for k := range request.Value.LocationInfos { //only nolds 1 key
+			nodeToAdd = k
+			completionStatusToAdd = request.Value.LocationInfos[k]
+		}
+		server.shard[targetShard].data[key].value.LocationInfos[nodeToAdd] = completionStatusToAdd
+	}
 	return &proto.SetResponse{}, nil
 }
 
@@ -292,6 +309,7 @@ func (server *KvServerImpl) Delete(
 	ctx context.Context,
 	request *proto.DeleteRequest,
 ) (*proto.DeleteResponse, error) {
+	//only deletes the part of the value associated with the provided node
 	logrus.WithFields(
 		logrus.Fields{"node": server.nodeName, "key": request.Key},
 	).Trace("node received Delete() request")
@@ -319,7 +337,13 @@ func (server *KvServerImpl) Delete(
 	}
 	_, exists := server.shard[targetShard].data[key]
 	if exists {
-      delete(server.shard[targetShard].data, key)
+		_, exists = server.shard[targetShard].data[key].value.LocationInfos[request.NodeName]
+		if exists {
+			delete(server.shard[targetShard].data[key].value.LocationInfos, request.NodeName)
+			if len(server.shard[targetShard].data[key].value.LocationInfos) == 0 {
+				delete(server.shard[targetShard].data, key)
+			}
+		}
    }
 	return &proto.DeleteResponse{}, nil
 }

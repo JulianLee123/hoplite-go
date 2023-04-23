@@ -1,9 +1,13 @@
 package kv
 
-import "hash/fnv"
+import (
+	"hash/fnv"
+)
 
 /// This file can be used for any common code you want to define and separate
 /// out from server.go or client.go
+
+var usingTtl = false
 
 func GetShardForKey(key string, numShards int) int {
 	hasher := fnv.New32()

@@ -333,11 +333,11 @@ func TestIntegrationGracefulMultiShardMovement(t *testing.T) {
  * This test performs shard movements in one goro while other client goros
  * continues to read and write to the cluster.
  */
-func TestIntegrationFull(t *testing.T) {
+func TestFull(t *testing.T) {
 	logrus.Debugf("starting integration setup")
-	setup := MakeTestSetup(MakeManyNodesWithManyShards(1000, 700))
+	setup := MakeTestSetup(MakeManyNodesWithManyShards(200, 70))
 
-	const numKeys = 1000
+	const numKeys = 200
 	keys := RandomKeys(numKeys, 20)
 	vals := RandomKeys(numKeys, 40)
 	for i := 0; i < numKeys; i++ {

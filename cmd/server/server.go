@@ -61,6 +61,6 @@ func main() {
 	)
 	logrus.Infof("server listening at %v", lis.Addr())
 	if err := server.Serve(lis); err != nil {
-		logrus.Fatalf("failed to serve: %v", err)
+		logrus.Fatalf("failed to server: %v", err)
 	}
 }

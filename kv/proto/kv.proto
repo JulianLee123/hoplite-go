@@ -4,22 +4,28 @@ package kv;
 
 option go_package = "cs426.yale.edu/lab4/kv/proto";
 
+message OdsInfo {
+	int64 size = 1; //The full expected size of the object upon completion
+	map<string, bool> location_infos = 2; //node and completion status pairing (1 if complete, 0 if partial)
+}
+
 message GetRequest {
 	string key = 1;
 }
 
 message SetRequest {
 	string key = 1;
-	string value = 2;
+	OdsInfo value = 2; //LocationInfos should have 1 element in this case
 	int64 ttl_ms = 3;
 }
 
 message DeleteRequest {
 	string key = 1;
+	string node_name = 2;
 }
 
 message GetResponse {
-	string value = 1;
+	OdsInfo value = 1;
 	bool was_found = 2;
 }
 
@@ -33,9 +39,10 @@ message GetShardContentsRequest {
 
 message GetShardValue {
 	string key = 1;
-	string value = 2;
+	OdsInfo value = 2;
 	int64 ttl_ms_remaining = 3;
 }
+
 message GetShardContentsResponse {
 	repeated GetShardValue values = 1;
 }

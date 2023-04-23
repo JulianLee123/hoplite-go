@@ -14,8 +14,6 @@ import (
 type Kv struct {
 	shardMap   *ShardMap
 	clientPool ClientPool
-
-	// Add any client-side state you want here
 }
 
 /*
@@ -43,7 +41,7 @@ func MakeKv(shardMap *ShardMap, clientPool ClientPool) *Kv {
 	return kv
 }
 
-func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
+func (kv *Kv) Get(ctx context.Context, key string) (*proto.OdsInfo, bool, error) {
 	// Trace-level logging -- you can remove or use to help debug in your tests
 	// with `-log-level=trace`. See the logging section of the spec.
 	logrus.WithFields(
@@ -54,7 +52,7 @@ func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
 	nodes := kv.shardMap.NodesForShard(shardNumber)
 
 	if len(nodes) == 0 {
-		return "", false, status.Error(codes.InvalidArgument, "no nodes found")
+		return nil, false, status.Error(codes.InvalidArgument, "no nodes found")
 	}
 
 	randNode := rand.Intn(len(nodes)) //choose random node
@@ -65,7 +63,7 @@ func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
 	client, err := kv.clientPool.GetClient(nodes[randNode])
 	for {
 		if (iterator%len(nodes)) == randNode && !start {
-			return "", false, err
+			return nil, false, err
 		}
 		start = false
 		client, err = kv.clientPool.GetClient(nodes[iterator%len(nodes)])
@@ -90,13 +88,13 @@ func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
 	return response.Value, response.WasFound, nil
 }
 
-func concurrentSet(ctx context.Context, key string, value string, ttl time.Duration,
+func concurrentSet(ctx context.Context, key string, value *proto.OdsInfo, ttl time.Duration,
 	errorChannel chan error, client proto.KvClient) {
 	_, err := client.Set(ctx, &proto.SetRequest{Key: key, Value: value, TtlMs: ttl.Milliseconds()})
 	errorChannel <- err
 }
 
-func (kv *Kv) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
+func (kv *Kv) Set(ctx context.Context, key string, value *proto.OdsInfo, ttl time.Duration) error {
 	logrus.WithFields(
 		logrus.Fields{"key": key},
 	).Trace("client sending Set() request")
@@ -128,13 +126,13 @@ func (kv *Kv) Set(ctx context.Context, key string, value string, ttl time.Durati
 	return pError
 }
 
-func concurrentDelete(ctx context.Context, key string,
+func concurrentDelete(ctx context.Context, key string, nodeName string,
 	errorChannel chan error, client proto.KvClient) {
-	_, err := client.Delete(ctx, &proto.DeleteRequest{Key: key})
+	_, err := client.Delete(ctx, &proto.DeleteRequest{Key: key, NodeName: nodeName})
 	errorChannel <- err
 }
 
-func (kv *Kv) Delete(ctx context.Context, key string) error {
+func (kv *Kv) Delete(ctx context.Context, key string, nodeName string) error {
 	logrus.WithFields(
 		logrus.Fields{"key": key},
 	).Trace("client sending Delete() request")
@@ -150,7 +148,7 @@ func (kv *Kv) Delete(ctx context.Context, key string) error {
 	for _, node := range nodes {
 		client, err := kv.clientPool.GetClient(node)
 		if err == nil {
-			go concurrentDelete(ctx, key, errorChannel, client)
+			go concurrentDelete(ctx, key, nodeName, errorChannel, client)
 		} else {
 			go func(chnl chan error, er error) {
 				chnl <- err
