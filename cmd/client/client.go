@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"cs426.yale.edu/lab4/kv"
+	"cs426.yale.edu/lab4/kv/proto"
 	"cs426.yale.edu/lab4/logging"
 )
 
@@ -61,20 +62,25 @@ func main() {
 			println(value)
 		}
 	case "set":
-		if len(args) < 4 {
+		if len(args) < 3 {
 			usage()
 		}
-		value := args[2]
-		ttlMs, err := strconv.ParseInt(args[3], 10, 64)
+		value := proto.OdsInfo{}
+		ttlMs, err := strconv.ParseInt(args[2], 10, 64)
 		if err != nil {
 			logrus.Fatalf("expected int value for ttlMs: %q", err)
 		}
-		err = client.Set(ctx, key, value, time.Duration(ttlMs)*time.Millisecond)
+		err = client.Set(ctx, key, &value, time.Duration(ttlMs)*time.Millisecond)
 		if err != nil {
 			logrus.WithField("key", key).Errorf("error setting value: %q", err)
 		}
 	case "delete":
-		err := client.Delete(ctx, key)
+		if len(args) < 3 {
+			usage()
+		}
+		nodename := args[2]
+
+		err := client.Delete(ctx, key, nodename)
 		if err != nil {
 			logrus.WithField("key", key).Errorf("error deleting value for key: %q", err)
 		}
