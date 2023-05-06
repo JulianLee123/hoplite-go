@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package hoplite;
+
+option go_package = "https://github.com/JulianLee123/hoplite-go/tree/main/hoplite/proto";
+
+message TaskRequest { 
+	string obj_id = 1; //object id of the to-be created object
+	int32 task_id = 2;
+	repeated string args = 3; //List of arguments as objId’s associated with the task
+	map<string, bytes> obj_id_to_obj = 4; //Pre-specified params (“generic” type)
+}
+
+message TaskResponse { }
+
+message TaskAnsRequest { 
+	string obj_id = 1;
+}
+
+message TaskAnsResponse { 
+	bytes res = 1;
+}
+
+message OdsInfo {
+	int64 size = 1; //The full expected size of the object upon completion
+	map<string, bool> location_infos = 2; //node and completion status pairing (1 if complete, 0 if partial)
+}
+
+message OdsGetRequest {
+	string key = 1; //object id
+}
+
+message OdsGetResponse {
+	OdsInfo value = 1;
+	bool was_found = 2;
+}
+
+message OdsSetRequest {
+	string key = 1;
+	OdsInfo value = 2; //LocationInfos should have 1 element in this case
+	int64 ttl_ms = 3;
+}
+
+message OdsSetResponse {}
+
+message OdsDeleteRequest {
+	string key = 1;
+	string node_name = 2;
+}
+
+message OdsDeleteResponse {}
+
+message BroadcastObjRequest {
+	string object_id = 1;
+	int32 start = 2; //where to start copying from (to allow for partial copy transmission)
+}
+
+message BroadcastObjResponse {
+	bytes object = 1;
+}
+
+message DeleteObjRequest {
+	string object_id = 1;
+}
+
+message DeleteObjResponse {
+}
+
+service Kv {
+	//RPC calls between nodes for Ods 
+	rpc OdsGet(OdsGetRequest) returns (OdsGetResponse);
+	rpc OdsSet(OdsSetRequest) returns (OdsSetResponse);
+	rpc OdsDelete(OdsDeleteRequest) returns (OdsDeleteResponse);
+
+	//RPC calls between nodes for Ods
+	rpc BroadcastObj(BroadcastObjRequest) returns (BroadcastObjResponse);
+	rpc DeleteObj(DeleteObjRequest) returns (DeleteObjResponse);
+
+	//RPC call between TaskScheduler and nodes 
+	rpc ScheduleTask(TaskRequest) returns (TaskResponse);
+	rpc GetTaskAns(TaskAnsRequest) returns (TaskAnsResponse);
+}
