@@ -18,10 +18,10 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// KvClient is the client API for Kv service.
+// HopliteClient is the client API for Hoplite service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type KvClient interface {
+type HopliteClient interface {
 	// RPC calls between nodes for Ods
 	OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error)
 	OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error)
@@ -34,81 +34,81 @@ type KvClient interface {
 	GetTaskAns(ctx context.Context, in *TaskAnsRequest, opts ...grpc.CallOption) (*TaskAnsResponse, error)
 }
 
-type kvClient struct {
+type hopliteClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewKvClient(cc grpc.ClientConnInterface) KvClient {
-	return &kvClient{cc}
+func NewHopliteClient(cc grpc.ClientConnInterface) HopliteClient {
+	return &hopliteClient{cc}
 }
 
-func (c *kvClient) OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error) {
+func (c *hopliteClient) OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error) {
 	out := new(OdsGetResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/OdsGet", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/OdsGet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error) {
+func (c *hopliteClient) OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error) {
 	out := new(OdsSetResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/OdsSet", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/OdsSet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) OdsDelete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error) {
+func (c *hopliteClient) OdsDelete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error) {
 	out := new(OdsDeleteResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/OdsDelete", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/OdsDelete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) BroadcastObj(ctx context.Context, in *BroadcastObjRequest, opts ...grpc.CallOption) (*BroadcastObjResponse, error) {
+func (c *hopliteClient) BroadcastObj(ctx context.Context, in *BroadcastObjRequest, opts ...grpc.CallOption) (*BroadcastObjResponse, error) {
 	out := new(BroadcastObjResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/BroadcastObj", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/BroadcastObj", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) DeleteObj(ctx context.Context, in *DeleteObjRequest, opts ...grpc.CallOption) (*DeleteObjResponse, error) {
+func (c *hopliteClient) DeleteObj(ctx context.Context, in *DeleteObjRequest, opts ...grpc.CallOption) (*DeleteObjResponse, error) {
 	out := new(DeleteObjResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/DeleteObj", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/DeleteObj", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) ScheduleTask(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error) {
+func (c *hopliteClient) ScheduleTask(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error) {
 	out := new(TaskResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/ScheduleTask", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/ScheduleTask", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) GetTaskAns(ctx context.Context, in *TaskAnsRequest, opts ...grpc.CallOption) (*TaskAnsResponse, error) {
+func (c *hopliteClient) GetTaskAns(ctx context.Context, in *TaskAnsRequest, opts ...grpc.CallOption) (*TaskAnsResponse, error) {
 	out := new(TaskAnsResponse)
-	err := c.cc.Invoke(ctx, "/hoplite.Kv/GetTaskAns", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/GetTaskAns", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// KvServer is the server API for Kv service.
-// All implementations must embed UnimplementedKvServer
+// HopliteServer is the server API for Hoplite service.
+// All implementations must embed UnimplementedHopliteServer
 // for forward compatibility
-type KvServer interface {
+type HopliteServer interface {
 	// RPC calls between nodes for Ods
 	OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error)
 	OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error)
@@ -119,207 +119,207 @@ type KvServer interface {
 	// RPC call between TaskScheduler and nodes
 	ScheduleTask(context.Context, *TaskRequest) (*TaskResponse, error)
 	GetTaskAns(context.Context, *TaskAnsRequest) (*TaskAnsResponse, error)
-	mustEmbedUnimplementedKvServer()
+	mustEmbedUnimplementedHopliteServer()
 }
 
-// UnimplementedKvServer must be embedded to have forward compatible implementations.
-type UnimplementedKvServer struct {
+// UnimplementedHopliteServer must be embedded to have forward compatible implementations.
+type UnimplementedHopliteServer struct {
 }
 
-func (UnimplementedKvServer) OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error) {
+func (UnimplementedHopliteServer) OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OdsGet not implemented")
 }
-func (UnimplementedKvServer) OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error) {
+func (UnimplementedHopliteServer) OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OdsSet not implemented")
 }
-func (UnimplementedKvServer) OdsDelete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error) {
+func (UnimplementedHopliteServer) OdsDelete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OdsDelete not implemented")
 }
-func (UnimplementedKvServer) BroadcastObj(context.Context, *BroadcastObjRequest) (*BroadcastObjResponse, error) {
+func (UnimplementedHopliteServer) BroadcastObj(context.Context, *BroadcastObjRequest) (*BroadcastObjResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastObj not implemented")
 }
-func (UnimplementedKvServer) DeleteObj(context.Context, *DeleteObjRequest) (*DeleteObjResponse, error) {
+func (UnimplementedHopliteServer) DeleteObj(context.Context, *DeleteObjRequest) (*DeleteObjResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteObj not implemented")
 }
-func (UnimplementedKvServer) ScheduleTask(context.Context, *TaskRequest) (*TaskResponse, error) {
+func (UnimplementedHopliteServer) ScheduleTask(context.Context, *TaskRequest) (*TaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ScheduleTask not implemented")
 }
-func (UnimplementedKvServer) GetTaskAns(context.Context, *TaskAnsRequest) (*TaskAnsResponse, error) {
+func (UnimplementedHopliteServer) GetTaskAns(context.Context, *TaskAnsRequest) (*TaskAnsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskAns not implemented")
 }
-func (UnimplementedKvServer) mustEmbedUnimplementedKvServer() {}
+func (UnimplementedHopliteServer) mustEmbedUnimplementedHopliteServer() {}
 
-// UnsafeKvServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to KvServer will
+// UnsafeHopliteServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HopliteServer will
 // result in compilation errors.
-type UnsafeKvServer interface {
-	mustEmbedUnimplementedKvServer()
+type UnsafeHopliteServer interface {
+	mustEmbedUnimplementedHopliteServer()
 }
 
-func RegisterKvServer(s grpc.ServiceRegistrar, srv KvServer) {
-	s.RegisterService(&Kv_ServiceDesc, srv)
+func RegisterHopliteServer(s grpc.ServiceRegistrar, srv HopliteServer) {
+	s.RegisterService(&Hoplite_ServiceDesc, srv)
 }
 
-func _Kv_OdsGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_OdsGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).OdsGet(ctx, in)
+		return srv.(HopliteServer).OdsGet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/OdsGet",
+		FullMethod: "/hoplite.Hoplite/OdsGet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).OdsGet(ctx, req.(*OdsGetRequest))
+		return srv.(HopliteServer).OdsGet(ctx, req.(*OdsGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_OdsSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_OdsSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsSetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).OdsSet(ctx, in)
+		return srv.(HopliteServer).OdsSet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/OdsSet",
+		FullMethod: "/hoplite.Hoplite/OdsSet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).OdsSet(ctx, req.(*OdsSetRequest))
+		return srv.(HopliteServer).OdsSet(ctx, req.(*OdsSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_OdsDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_OdsDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsDeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).OdsDelete(ctx, in)
+		return srv.(HopliteServer).OdsDelete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/OdsDelete",
+		FullMethod: "/hoplite.Hoplite/OdsDelete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).OdsDelete(ctx, req.(*OdsDeleteRequest))
+		return srv.(HopliteServer).OdsDelete(ctx, req.(*OdsDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_BroadcastObj_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_BroadcastObj_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BroadcastObjRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).BroadcastObj(ctx, in)
+		return srv.(HopliteServer).BroadcastObj(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/BroadcastObj",
+		FullMethod: "/hoplite.Hoplite/BroadcastObj",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).BroadcastObj(ctx, req.(*BroadcastObjRequest))
+		return srv.(HopliteServer).BroadcastObj(ctx, req.(*BroadcastObjRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_DeleteObj_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_DeleteObj_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteObjRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).DeleteObj(ctx, in)
+		return srv.(HopliteServer).DeleteObj(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/DeleteObj",
+		FullMethod: "/hoplite.Hoplite/DeleteObj",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).DeleteObj(ctx, req.(*DeleteObjRequest))
+		return srv.(HopliteServer).DeleteObj(ctx, req.(*DeleteObjRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_ScheduleTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_ScheduleTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).ScheduleTask(ctx, in)
+		return srv.(HopliteServer).ScheduleTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/ScheduleTask",
+		FullMethod: "/hoplite.Hoplite/ScheduleTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).ScheduleTask(ctx, req.(*TaskRequest))
+		return srv.(HopliteServer).ScheduleTask(ctx, req.(*TaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_GetTaskAns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Hoplite_GetTaskAns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TaskAnsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).GetTaskAns(ctx, in)
+		return srv.(HopliteServer).GetTaskAns(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hoplite.Kv/GetTaskAns",
+		FullMethod: "/hoplite.Hoplite/GetTaskAns",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).GetTaskAns(ctx, req.(*TaskAnsRequest))
+		return srv.(HopliteServer).GetTaskAns(ctx, req.(*TaskAnsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Kv_ServiceDesc is the grpc.ServiceDesc for Kv service.
+// Hoplite_ServiceDesc is the grpc.ServiceDesc for Hoplite service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Kv_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hoplite.Kv",
-	HandlerType: (*KvServer)(nil),
+var Hoplite_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hoplite.Hoplite",
+	HandlerType: (*HopliteServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "OdsGet",
-			Handler:    _Kv_OdsGet_Handler,
+			Handler:    _Hoplite_OdsGet_Handler,
 		},
 		{
 			MethodName: "OdsSet",
-			Handler:    _Kv_OdsSet_Handler,
+			Handler:    _Hoplite_OdsSet_Handler,
 		},
 		{
 			MethodName: "OdsDelete",
-			Handler:    _Kv_OdsDelete_Handler,
+			Handler:    _Hoplite_OdsDelete_Handler,
 		},
 		{
 			MethodName: "BroadcastObj",
-			Handler:    _Kv_BroadcastObj_Handler,
+			Handler:    _Hoplite_BroadcastObj_Handler,
 		},
 		{
 			MethodName: "DeleteObj",
-			Handler:    _Kv_DeleteObj_Handler,
+			Handler:    _Hoplite_DeleteObj_Handler,
 		},
 		{
 			MethodName: "ScheduleTask",
-			Handler:    _Kv_ScheduleTask_Handler,
+			Handler:    _Hoplite_ScheduleTask_Handler,
 		},
 		{
 			MethodName: "GetTaskAns",
-			Handler:    _Kv_GetTaskAns_Handler,
+			Handler:    _Hoplite_GetTaskAns_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
