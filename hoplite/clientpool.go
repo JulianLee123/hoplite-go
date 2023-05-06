@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func makeConnection(addr string) (proto.KvClient, error) {
+func makeConnection(addr string) (proto.HopliteClient, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -19,41 +19,35 @@ func makeConnection(addr string) (proto.KvClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return proto.NewKvClient(channel), nil
+	return proto.NewHopliteClient(channel), nil
 }
 
 /*
- * ClientPool is the main interface you will be using to call into the KvServers,
- * both from the client (Kv in client.go) and from the servers (when you implement
- * shard copying).
- *
  * Clients are cached by nodeName. We assume that the connection information (Address/Port)
  * will never change for a given nodeName.
  *
- * It is important to use ClientPool::GetClient() instead of your own logic
- * because unit-tests will use a mocked version of ClientPool to change behaviors, test with
- * failure injection, etc.
+ * Use ClientPool::GetClient()
  */
 type ClientPool interface {
 	/*
-	 * Returns a KvClient for a given node if one can be created. Returns (nil, err)
-	 * otherwise. Errors are not cached, so subsequent calls may return a valid KvClient.
+	 * Returns a client for a given node if one can be created. Returns (nil, err)
+	 * otherwise. Errors are not cached, so subsequent calls may return a valid client.
 	 */
-	GetClient(nodeName string) (proto.KvClient, error)
+	GetClient(nodeName string) (proto.HopliteClient, error)
 }
 
 type GrpcClientPool struct {
 	shardMap *ShardMap
 
 	mutex   sync.RWMutex
-	clients map[string]proto.KvClient
+	clients map[string]proto.HopliteClient
 }
 
 func MakeClientPool(shardMap *ShardMap) GrpcClientPool {
-	return GrpcClientPool{shardMap: shardMap, clients: make(map[string]proto.KvClient)}
+	return GrpcClientPool{shardMap: shardMap, clients: make(map[string]proto.HopliteClient)}
 }
 
-func (pool *GrpcClientPool) GetClient(nodeName string) (proto.KvClient, error) {
+func (pool *GrpcClientPool) GetClient(nodeName string) (proto.HopliteClient, error) {
 	// Optimistic read -- most cases we will have already cached the client, so
 	// only take a read lock to maximize concurrency here
 	pool.mutex.RLock()

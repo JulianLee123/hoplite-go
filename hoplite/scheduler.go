@@ -18,10 +18,10 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}) *TaskSchedul
 		busy[i] = false
 	}
 	scheduler := TaskScheduler{
-		nodeBusy = busy, 
-		objIds = make([]string), 
-		clientPool = clientPool, 
-		shutdown = doneCh, 
+		nodeBusy: busy, 
+		objIds: make([]string), 
+		clientPool: clientPool, 
+		shutdown: doneCh, 
 	}
 	return &server; 
 }
@@ -33,25 +33,25 @@ func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args string[], objIdT
 }
 
 func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], objIdToObj map<string, []byte>, chan []byte, objIdCounter int) {
-	nodes := kv.shardMap.NodesForShard(shardNumber)
+	nodes := scheduler.shardMap.NodesForShard(shardNumber)
 
 	randNode := rand.Intn(len(nodes)) //choose random node
 	iterator := randNode
 	start := true
 	var response *proto.OdsGetResponse
 
-	client, err := kv.clientPool.GetClient(nodes[randNode])
+	client, err := scheduler.clientPool.GetClient(nodes[randNode])
 	for { //TODO: HOW TO CHECK IF NODE BUSY? 
 		if (iterator%len(nodes)) == randNode && !start {
 			return nil, false, err
 		}
 		start = false
-		client, err = kv.clientPool.GetClient(nodes[iterator%len(nodes)])
+		client, err = scheduler.clientPool.GetClient(nodes[iterator%len(nodes)])
 		if err != nil {
 			iterator += 1
 			continue
 		} else {
-			response, err = client.Call(kv.RunTask(TaskRequest{obj_id=strconv.Itoa(objIdCounter), task_id=taskId, args=make([]string), obj_id_to_obj=objIdToObj}))
+			response, err = client.Call(scheduler.RunTask(TaskRequest{obj_id=strconv.Itoa(objIdCounter), task_id=taskId, args=make([]string), obj_id_to_obj=objIdToObj}))
 			if err != nil {
 				iterator += 1
 				continue
@@ -69,18 +69,18 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
 	start := true
 	var response *proto.OdsGetResponse
 
-	client, err := kv.clientPool.GetClient(nodes[randNode])
+	client, err := scheduler.clientPool.GetClient(nodes[randNode])
 	for { //TODO: HOW TO CHECK IF NODE BUSY? 
 		if (iterator%len(nodes)) == randNode && !start {
 			return nil, false, err
 		}
 		start = false
-		client, err = kv.clientPool.GetClient(nodes[iterator%len(nodes)])
+		client, err = scheduler.clientPool.GetClient(nodes[iterator%len(nodes)])
 		if err != nil {
 			iterator += 1
 			continue
 		} else {
-			response, err = client.Call(kv.GetTaskAns(TaskAnsRequest{obj_id=strconv.Itoa(objId)}))
+			response, err = client.Call(scheduler.GetTaskAns(TaskAnsRequest{obj_id=strconv.Itoa(objId)}))
 			if err != nil {
 				iterator += 1
 				continue
