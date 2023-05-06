@@ -1,18 +1,24 @@
-
+package kv
 
 type TaskScheduler struct {
 	nodeBusy []bool          
 	objIds []string //list of used objIds          
 	clientPool ClientPool
 	shutdown   chan struct{}
+	numNods int
 	mu         sync.RWMutex
 }
 
 var objIdCounter = 0; 
 
 func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}) *TaskScheduler {
+	numNodes := len(clientPool.clients) 
+	busy := make([]bool, numNodes)
+	for i := range numNodes {
+		busy[i] = false
+	}
 	scheduler := TaskScheduler{
-		nodeBusy = make([]bool), 
+		nodeBusy = busy, 
 		objIds = make([]string), 
 		clientPool = clientPool, 
 		shutdown = doneCh, 
@@ -20,19 +26,13 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}) *TaskSchedul
 	return &server; 
 }
 
-
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args string[], objIdToObj map<string, []byte>) (string, err) {
-	obIdCounter += 1; 
-	go ScheduleTaskHelper(taskId, args, objIdToObj) 
-	return objIdCounter; 
+	objIdCounter += 1
+	go ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter) 
+	return objIdCounter
 }
 
-func (scheduler *TaskScheduler) sendAppendEntries(server int, args *AppendArgs, reply *AppendReply) bool {
-	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
-	return ok
-}
-
-func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], objIdToObj map<string, []byte>, chan []byte) {
+func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], objIdToObj map<string, []byte>, chan []byte, objIdCounter int) {
 	nodes := kv.shardMap.NodesForShard(shardNumber)
 
 	randNode := rand.Intn(len(nodes)) //choose random node
@@ -51,11 +51,12 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], 
 			iterator += 1
 			continue
 		} else {
-			response, err = client.Get(ctx, &proto.OdsGetRequest{Key: key})
+			response, err = client.Call(kv.RunTask(TaskRequest{obj_id=strconv.Itoa(objIdCounter), task_id=taskId, args=make([]string), obj_id_to_obj=objIdToObj}))
 			if err != nil {
 				iterator += 1
 				continue
 			}
+			scheduler.nodeBusy[iterator % len(nodes)] = true
 			break
 		}
 	}
@@ -63,5 +64,29 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], 
 
 
 func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
-	
+	randNode := rand.Intn(len(nodes)) //choose random node
+	iterator := randNode
+	start := true
+	var response *proto.OdsGetResponse
+
+	client, err := kv.clientPool.GetClient(nodes[randNode])
+	for { //TODO: HOW TO CHECK IF NODE BUSY? 
+		if (iterator%len(nodes)) == randNode && !start {
+			return nil, false, err
+		}
+		start = false
+		client, err = kv.clientPool.GetClient(nodes[iterator%len(nodes)])
+		if err != nil {
+			iterator += 1
+			continue
+		} else {
+			response, err = client.Call(kv.GetTaskAns(TaskAnsRequest{obj_id=strconv.Itoa(objId)}))
+			if err != nil {
+				iterator += 1
+				continue
+			}
+			scheduler.nodeBusy[iterator % len(nodes)] = false
+			break
+		}
+	}
 }
