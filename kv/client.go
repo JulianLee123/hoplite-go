@@ -58,7 +58,7 @@ func (kv *Kv) Get(ctx context.Context, key string) (*proto.OdsInfo, bool, error)
 	randNode := rand.Intn(len(nodes)) //choose random node
 	iterator := randNode
 	start := true
-	var response *proto.GetResponse
+	var response *proto.OdsGetResponse
 
 	client, err := kv.clientPool.GetClient(nodes[randNode])
 	for {
@@ -71,7 +71,7 @@ func (kv *Kv) Get(ctx context.Context, key string) (*proto.OdsInfo, bool, error)
 			iterator += 1
 			continue
 		} else {
-			response, err = client.Get(ctx, &proto.GetRequest{Key: key})
+			response, err = client.Get(ctx, &proto.OdsGetRequest{Key: key})
 			if err != nil {
 				iterator += 1
 				continue
@@ -90,7 +90,7 @@ func (kv *Kv) Get(ctx context.Context, key string) (*proto.OdsInfo, bool, error)
 
 func concurrentSet(ctx context.Context, key string, value *proto.OdsInfo, ttl time.Duration,
 	errorChannel chan error, client proto.KvClient) {
-	_, err := client.Set(ctx, &proto.SetRequest{Key: key, Value: value, TtlMs: ttl.Milliseconds()})
+	_, err := client.Set(ctx, &proto.OdsSetRequest{Key: key, Value: value})
 	errorChannel <- err
 }
 
@@ -128,7 +128,7 @@ func (kv *Kv) Set(ctx context.Context, key string, value *proto.OdsInfo, ttl tim
 
 func concurrentDelete(ctx context.Context, key string, nodeName string,
 	errorChannel chan error, client proto.KvClient) {
-	_, err := client.Delete(ctx, &proto.DeleteRequest{Key: key, NodeName: nodeName})
+	_, err := client.Delete(ctx, &proto.OdsDeleteRequest{Key: key, NodeName: nodeName})
 	errorChannel <- err
 }
 

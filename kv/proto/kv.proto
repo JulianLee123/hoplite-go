@@ -9,28 +9,28 @@ message OdsInfo {
 	map<string, bool> location_infos = 2; //node and completion status pairing (1 if complete, 0 if partial)
 }
 
-message GetRequest {
+message OdsGetRequest {
 	string key = 1;
 }
 
-message SetRequest {
+message OdsSetRequest {
 	string key = 1;
 	OdsInfo value = 2; //LocationInfos should have 1 element in this case
 	int64 ttl_ms = 3;
 }
 
-message DeleteRequest {
+message OdsDeleteRequest {
 	string key = 1;
 	string node_name = 2;
 }
 
-message GetResponse {
+message OdsGetResponse {
 	OdsInfo value = 1;
 	bool was_found = 2;
 }
 
-message SetResponse {}
-message DeleteResponse {}
+message OdsSetResponse {}
+message OdsDeleteResponse {}
 
 
 message GetShardContentsRequest {
@@ -40,7 +40,6 @@ message GetShardContentsRequest {
 message GetShardValue {
 	string key = 1;
 	OdsInfo value = 2;
-	int64 ttl_ms_remaining = 3;
 }
 
 message GetShardContentsResponse {
@@ -48,9 +47,9 @@ message GetShardContentsResponse {
 }
 
 service Kv {
-	rpc Get(GetRequest) returns (GetResponse);
-	rpc Set(SetRequest) returns (SetResponse);
-	rpc Delete(DeleteRequest) returns (DeleteResponse);
+	rpc Get(OdsGetRequest) returns (OdsGetResponse);
+	rpc Set(OdsSetRequest) returns (OdsSetResponse);
+	rpc Delete(OdsDeleteRequest) returns (OdsDeleteResponse);
 
 	rpc GetShardContents(GetShardContentsRequest) returns (GetShardContentsResponse);
 }
