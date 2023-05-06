@@ -47,9 +47,26 @@ message GetShardContentsResponse {
 }
 
 service Kv {
-	rpc Get(OdsGetRequest) returns (OdsGetResponse);
-	rpc Set(OdsSetRequest) returns (OdsSetResponse);
-	rpc Delete(OdsDeleteRequest) returns (OdsDeleteResponse);
+	rpc OdsGet(OdsGetRequest) returns (OdsGetResponse);
+	rpc OdsSet(OdsSetRequest) returns (OdsSetResponse);
+	rpc OdsDelete(OdsDeleteRequest) returns (OdsDeleteResponse);
 
 	rpc GetShardContents(GetShardContentsRequest) returns (GetShardContentsResponse);
+}
+
+message TaskRequest { 
+	string obj_id = 1; //object id of the to-be created object
+	int32 task_id = 2;
+	repeated string args = 3; //List of arguments as objId’s associated with the task
+	map<string, bytes> obj_id_to_obj = 4; //Pre-specified params (“generic” type)
+}
+
+message TaskResponse { }
+
+message TaskAnsRequest { 
+	string obj_id = 1;
+}
+
+message TaskAnsResponse { 
+	bytes res = 1;
 }

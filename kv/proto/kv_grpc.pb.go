@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Kv_Get_FullMethodName              = "/kv.Kv/Get"
-	Kv_Set_FullMethodName              = "/kv.Kv/Set"
-	Kv_Delete_FullMethodName           = "/kv.Kv/Delete"
+	Kv_OdsGet_FullMethodName           = "/kv.Kv/OdsGet"
+	Kv_OdsSet_FullMethodName           = "/kv.Kv/OdsSet"
+	Kv_OdsDelete_FullMethodName        = "/kv.Kv/OdsDelete"
 	Kv_GetShardContents_FullMethodName = "/kv.Kv/GetShardContents"
 )
 
@@ -29,9 +29,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KvClient interface {
-	Get(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error)
-	Set(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error)
-	Delete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error)
+	OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error)
+	OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error)
+	OdsDelete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error)
 	GetShardContents(ctx context.Context, in *GetShardContentsRequest, opts ...grpc.CallOption) (*GetShardContentsResponse, error)
 }
 
@@ -43,27 +43,27 @@ func NewKvClient(cc grpc.ClientConnInterface) KvClient {
 	return &kvClient{cc}
 }
 
-func (c *kvClient) Get(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error) {
+func (c *kvClient) OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error) {
 	out := new(OdsGetResponse)
-	err := c.cc.Invoke(ctx, Kv_Get_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Kv_OdsGet_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) Set(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error) {
+func (c *kvClient) OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error) {
 	out := new(OdsSetResponse)
-	err := c.cc.Invoke(ctx, Kv_Set_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Kv_OdsSet_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kvClient) Delete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error) {
+func (c *kvClient) OdsDelete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error) {
 	out := new(OdsDeleteResponse)
-	err := c.cc.Invoke(ctx, Kv_Delete_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Kv_OdsDelete_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +83,9 @@ func (c *kvClient) GetShardContents(ctx context.Context, in *GetShardContentsReq
 // All implementations must embed UnimplementedKvServer
 // for forward compatibility
 type KvServer interface {
-	Get(context.Context, *OdsGetRequest) (*OdsGetResponse, error)
-	Set(context.Context, *OdsSetRequest) (*OdsSetResponse, error)
-	Delete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error)
+	OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error)
+	OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error)
+	OdsDelete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error)
 	GetShardContents(context.Context, *GetShardContentsRequest) (*GetShardContentsResponse, error)
 	mustEmbedUnimplementedKvServer()
 }
@@ -94,14 +94,14 @@ type KvServer interface {
 type UnimplementedKvServer struct {
 }
 
-func (UnimplementedKvServer) Get(context.Context, *OdsGetRequest) (*OdsGetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedKvServer) OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OdsGet not implemented")
 }
-func (UnimplementedKvServer) Set(context.Context, *OdsSetRequest) (*OdsSetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
+func (UnimplementedKvServer) OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OdsSet not implemented")
 }
-func (UnimplementedKvServer) Delete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+func (UnimplementedKvServer) OdsDelete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OdsDelete not implemented")
 }
 func (UnimplementedKvServer) GetShardContents(context.Context, *GetShardContentsRequest) (*GetShardContentsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetShardContents not implemented")
@@ -119,56 +119,56 @@ func RegisterKvServer(s grpc.ServiceRegistrar, srv KvServer) {
 	s.RegisterService(&Kv_ServiceDesc, srv)
 }
 
-func _Kv_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Kv_OdsGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).Get(ctx, in)
+		return srv.(KvServer).OdsGet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Kv_Get_FullMethodName,
+		FullMethod: Kv_OdsGet_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).Get(ctx, req.(*OdsGetRequest))
+		return srv.(KvServer).OdsGet(ctx, req.(*OdsGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Kv_OdsSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsSetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).Set(ctx, in)
+		return srv.(KvServer).OdsSet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Kv_Set_FullMethodName,
+		FullMethod: Kv_OdsSet_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).Set(ctx, req.(*OdsSetRequest))
+		return srv.(KvServer).OdsSet(ctx, req.(*OdsSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Kv_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Kv_OdsDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OdsDeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvServer).Delete(ctx, in)
+		return srv.(KvServer).OdsDelete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Kv_Delete_FullMethodName,
+		FullMethod: Kv_OdsDelete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvServer).Delete(ctx, req.(*OdsDeleteRequest))
+		return srv.(KvServer).OdsDelete(ctx, req.(*OdsDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -199,16 +199,16 @@ var Kv_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*KvServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Get",
-			Handler:    _Kv_Get_Handler,
+			MethodName: "OdsGet",
+			Handler:    _Kv_OdsGet_Handler,
 		},
 		{
-			MethodName: "Set",
-			Handler:    _Kv_Set_Handler,
+			MethodName: "OdsSet",
+			Handler:    _Kv_OdsSet_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _Kv_Delete_Handler,
+			MethodName: "OdsDelete",
+			Handler:    _Kv_OdsDelete_Handler,
 		},
 		{
 			MethodName: "GetShardContents",
