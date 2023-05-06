@@ -1,4 +1,4 @@
-module cs426.yale.edu/lab4
+module hoplite.go
 
 go 1.19
 

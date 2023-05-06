@@ -1,4 +1,4 @@
-package kv
+package hoplite
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"./hoplite/proto"
+	"hoplite.go/hoplite/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

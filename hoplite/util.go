@@ -1,4 +1,4 @@
-package kv
+package hoplite
 
 import (
 	"hash/fnv"
