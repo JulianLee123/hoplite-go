@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"proto/hoplite"
+	"github.com/JulianLee123/hoplite-go/hoplite/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package hoplite;
 
-option go_package = "./hoplite/proto";
+option go_package = "github.com/JulianLee123/hoplite-go/tree/main/hoplite/proto";
 
 message TaskRequest { 
 	string obj_id = 1; //object id of the to-be created object
