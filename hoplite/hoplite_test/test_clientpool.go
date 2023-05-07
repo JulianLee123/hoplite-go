@@ -135,22 +135,6 @@ func (c *TestClient) OdsDelete(ctx context.Context, req *proto.OdsDeleteRequest,
 	return c.server.OdsDeleteRes(ctx, req)
 }
 
-/* func (c *TestClient) GetShardContents(ctx context.Context, req *proto.GetShardContentsRequest, opts ...grpc.CallOption) (*proto.GetShardContentsResponse, error) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	atomic.AddUint64(&c.requestsSent, 1)
-	if c.err != nil {
-		return nil, c.err
-	}
-	if c.latencyInjection != nil {
-		time.Sleep(*c.latencyInjection)
-	}
-	if c.getShardContentsResponse != nil {
-		return c.getShardContentsResponse, nil
-	}
-	return c.server.GetShardContents(ctx, req)
-} */
-
 func (c *TestClient) ClearOverrides() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

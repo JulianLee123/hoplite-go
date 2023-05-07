@@ -14,16 +14,18 @@ func GetShardForKey(key string, numShards int) int {
 	return int(hasher.Sum32())%numShards + 1
 }
 
-func TestOneNodeError(t *testing.T) {
+func TestOneNode(t *testing.T) {
 	setup := MakeTestSetup(MakeBasicOneShard())
-	_, err := setup.Get("abc", "n1")
-	assert.NotNil(t, err)
+	res, err := setup.Get("abc", "n1")
+	assert.False(t, res.WasFound)
+	assert.Nil(t, err)
 }
 
 func TestOneNodeSuccess(t *testing.T) {
 	setup := MakeTestSetup(MakeBasicOneShard())
 	setup.Set("abc", "n1")
 	_, err := setup.Get("abc", "n1")
+	fmt.Println(err)
 	assert.NotNil(t, err)
 }
 
