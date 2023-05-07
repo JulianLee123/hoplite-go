@@ -16,12 +16,16 @@ import (
 //OBJECT MANAGEMENT
 
 //currently DOES NOT handle partial copies
-func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj map[string][]byte) []byte {
+func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj map[string][]byte, ch chan struct{}) []byte {
 	//synchronous: runs until successful (can always be successful if 0-1 nodes down)
+	//option to return via channel done
 	
 	//search pre-set
 	obj, exists := objIdToObj[objId]
 	if exists { //objectId in the pre-specified params
+		if ch != nil{
+			ch <- struct{}{}
+		}
 		return obj
 	}
 
@@ -34,6 +38,9 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 			if !objLocal.isPartial{
 				defer objLocal.mu.RUnlock()
 				defer node.localObjStore.mu.RUnlock()
+				if ch != nil{
+					ch <- struct{}{}
+				}
 				return objLocal.data
 			}
 			objLocal.mu.RUnlock()
@@ -55,6 +62,9 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 							node.localObjStore.mu.Lock()
 							defer node.localObjStore.mu.Unlock()
 							node.localObjStore.mp[objId] = LocalObj{data: response.Object, isPartial: false}
+							if ch != nil{
+								ch <- struct{}{}
+							}
 							return response.Object
 						}
 					}
@@ -101,6 +111,8 @@ func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error{
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
+
+	node.OdsDeleteReq(ctx, objId, node.nodeName)
 
 	var retErr error = nil
 	for nodeWithInfo := range odsInfo.LocationInfos {
