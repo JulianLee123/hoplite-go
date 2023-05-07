@@ -8,6 +8,6 @@ import (
 
 func TestOneNode(t *testing.T) {
 	setup := MakeTestSetup(MakeBasicOneShard())
-	_, err := setup.Get("abc")
+	_, err := setup.Get("abc", "n1")
 	assert.Nil(t, err)
 }

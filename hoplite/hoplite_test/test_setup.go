@@ -11,9 +11,8 @@ import (
 
 type TestSetup struct {
 	shardMap   *hoplite.ShardMap
-	nodes      map[string]*hoplite.Ods
+	nodes      map[string]*hoplite.Node
 	clientPool TestClientPool
-	node       *hoplite.Ods
 	ctx        context.Context
 }
 
@@ -22,7 +21,7 @@ func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 	setup := TestSetup{
 		shardMap: &hoplite.ShardMap{},
 		ctx:      context.Background(),
-		nodes:    make(map[string]*hoplite.Ods),
+		nodes:    make(map[string]*hoplite.Node),
 	}
 	setup.shardMap.Update(&shardMap)
 	for name := range setup.shardMap.Nodes() {
@@ -58,6 +57,7 @@ func makeNodeInfos(n int) map[string]hoplite.NodeInfo {
 	return nodes
 }
 
-func (ts *TestSetup) Get(key string) (*proto.OdsGetResponse, error) {
-	return ts.node.OdsGetRes(ts.ctx, &proto.OdsGetRequest{Key: key})
+func (ts *TestSetup) Get(key string, client string) (*proto.OdsGetResponse, error) {
+	gotClient, _ := ts.clientPool.GetClient(client)
+	return gotClient.OdsGet(ts.ctx, &proto.OdsGetRequest{Key: key})
 }
