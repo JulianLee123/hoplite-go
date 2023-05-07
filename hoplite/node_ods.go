@@ -7,10 +7,10 @@ import (
 	"math/rand"
 	"time"
 
-	"hoplite.go/hoplite/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"hoplite.go/hoplite/proto"
 )
 
 //OBJECT MANAGEMENT
@@ -29,13 +29,13 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 		return obj
 	}
 
-	for true{
+	for true {
 		//search locally
 		node.localObjStore.mu.RLock()
 		objLocal, exists := node.localObjStore.mp[objId]
 		if exists { //objectId in the pre-specified params
 			objLocal.mu.RLock()
-			if !objLocal.isPartial{
+			if !objLocal.isPartial {
 				defer objLocal.mu.RUnlock()
 				defer node.localObjStore.mu.RUnlock()
 				if ch != nil{
@@ -52,12 +52,12 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 		odsInfo, wasFound, err := node.OdsGetReq(ctx, objId)
 		if err != nil && wasFound && odsInfo != nil {
 			for nodeWithInfo := range odsInfo.LocationInfos {
-				if odsInfo.LocationInfos[nodeWithInfo] { 
+				if odsInfo.LocationInfos[nodeWithInfo] {
 					//found node with complete copy: acquire it
 					client, err := node.clientPool.GetClient(nodeWithInfo)
-					if err != nil{
+					if err != nil {
 						response, err := client.BroadcastObj(ctx, &proto.BroadcastObjRequest{ObjectId: objId, Start: 0})
-						if err != nil{
+						if err != nil {
 							//save object in local object store and return it
 							node.localObjStore.mu.Lock()
 							defer node.localObjStore.mu.Unlock()
@@ -73,7 +73,7 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return nil//unreachable
+	return nil //unreachable
 }
 
 func (node *Node) PutGlobalObject(ctx context.Context, objId string, obj []byte) {
@@ -81,29 +81,29 @@ func (node *Node) PutGlobalObject(ctx context.Context, objId string, obj []byte)
 	//Synchronous: runs until successful (can always be successful if 0-1 nodes down)
 	node.localObjStore.mu.Lock()
 	defer node.localObjStore.mu.Unlock()
-	node.localObjStore.mp[objId] = LocalObj{data: obj, isPartial: false}	
+	node.localObjStore.mp[objId] = LocalObj{data: obj, isPartial: false}
 
 	mp := make(map[string]bool)
 	mp[node.nodeName] = true //storing a complete object
 	odsInfo := &proto.OdsInfo{Size: int64(len(obj)), LocationInfos: mp}
-	for true{
+	for true {
 		err := node.OdsSetReq(ctx, objId, odsInfo)
-		if err == nil{
+		if err == nil {
 			return
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error{
+func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error {
 	//Deletes object from all nodes: sends a delete object request to all necessary nodes
-	//Error is set when we get a failure delete response from a node that 
+	//Error is set when we get a failure delete response from a node that
 	//should be storing this object according to ODS
 	odsInfo := &proto.OdsInfo{}
-	for true{
+	for true {
 		odsInfo, wasFound, err := node.OdsGetReq(ctx, objId)
-		if err == nil{
-			if !wasFound || odsInfo == nil{
+		if err == nil {
+			if !wasFound || odsInfo == nil {
 				//nothing to delete
 				return nil
 			}
@@ -117,13 +117,13 @@ func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error{
 	var retErr error = nil
 	for nodeWithInfo := range odsInfo.LocationInfos {
 		//send delete request to nodes with this object
-		for true{
+		for true {
 			client, err := node.clientPool.GetClient(nodeWithInfo)
-			if err == nil{
+			if err == nil {
 				break
 			}
-			_, err = client.DeleteObj(ctx, &proto.DeleteObjRequest{ObjectId: objId})//only send once: if it errors out, not t
-			if err != nil{
+			_, err = client.DeleteObj(ctx, &proto.DeleteObjRequest{ObjectId: objId}) //only send once: if it errors out, not t
+			if err != nil {
 				retErr = err
 			}
 		}
@@ -131,32 +131,32 @@ func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error{
 	return retErr
 }
 
-func (node *Node) BroadcastLocalObject(ctx context.Context, request *proto.BroadcastObjRequest) (*proto.BroadcastObjResponse, error){
+func (node *Node) BroadcastLocalObject(ctx context.Context, request *proto.BroadcastObjRequest) (*proto.BroadcastObjResponse, error) {
 	//Broadcasts full object (possible optimization: pipelining)
 	node.localObjStore.mu.RLock()
 	defer node.localObjStore.mu.RUnlock()
 	objLocal, exists := node.localObjStore.mp[request.ObjectId]
-	if !exists { 
+	if !exists {
 		return nil, status.Error(codes.NotFound, "node doesn't host object requested to be broadcast")
 	}
 	objLocal.mu.Lock()
 	defer objLocal.mu.Unlock()
-	if len(objLocal.data) <= int(request.Start){
+	if len(objLocal.data) <= int(request.Start) {
 		//the requestor already has all the info on the object available on this node
 		return nil, status.Error(codes.NotFound, "node doesn't have further info on this object (size(obj) < start)")
 	}
 	return &proto.BroadcastObjResponse{Object: objLocal.data[request.Start:]}, nil
 }
 
-func (node *Node) DeleteLocalObject(ctx context.Context, request *proto.DeleteObjRequest) (*proto.DeleteObjResponse, error){
+func (node *Node) DeleteLocalObject(ctx context.Context, request *proto.DeleteObjRequest) (*proto.DeleteObjResponse, error) {
 	//Deletes local copy of the object specified by the provided object Id
 	node.localObjStore.mu.Lock()
 	defer node.localObjStore.mu.Unlock()
 	_, exists := node.localObjStore.mp[request.ObjectId]
-	if !exists { 
+	if !exists {
 		return nil, status.Error(codes.NotFound, "node doesn't host object requested to be deleted")
 	}
-	delete(node.localObjStore.mp,request.ObjectId)
+	delete(node.localObjStore.mp, request.ObjectId)
 	return &proto.DeleteObjResponse{}, nil
 }
 

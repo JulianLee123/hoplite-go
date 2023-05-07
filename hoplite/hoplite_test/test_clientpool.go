@@ -18,7 +18,7 @@ type TestClientPool struct {
 	nodes           map[string]*TestClient
 }
 
-func (cp *TestClientPool) Setup(nodes map[string]*hoplite.Ods) {
+func (cp *TestClientPool) Setup(nodes map[string]*hoplite.Node) {
 	cp.nodes = make(map[string]*TestClient)
 	for nodeName, server := range nodes {
 		cp.nodes[nodeName] = &TestClient{
@@ -74,7 +74,7 @@ func (cp *TestClientPool) ClearServerImpls() {
 }
 
 type TestClient struct {
-	server *hoplite.Ods
+	server *hoplite.Node
 	// requestsSent is managed atomically so we don't need write locks per request
 	requestsSent uint64
 

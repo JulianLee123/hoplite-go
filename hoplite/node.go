@@ -15,9 +15,10 @@ type OdsShard struct {
 }
 
 type Ods struct {
-	shardMap  *ShardMap
-	ourShards map[int]struct{}
-	shard     []OdsShard
+	shardMap   *ShardMap
+	ourShards  map[int]struct{}
+	clientPool ClientPool
+	shard      []OdsShard
 }
 
 type LocalObj struct {
@@ -49,6 +50,7 @@ func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool) *Node 
 	ods := Ods{
 		ourShards: make(map[int]struct{}),
 		shard:     make([]OdsShard, shardMap.NumShards()+1),
+		shardMap:  shardMap,
 	}
 	node := Node{
 		nodeName:      nodeName,
