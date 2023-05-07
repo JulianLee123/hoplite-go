@@ -3,6 +3,7 @@ package hoplitetest
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 
 	"github.com/sirupsen/logrus"
 	"hoplite.go/hoplite"
@@ -17,13 +18,19 @@ type TestSetup struct {
 	ctx        context.Context
 }
 
-func containsString(arr []string, target string) {
+func containsString(arr []string, target string) bool {
 	for _, a := range arr {
 		if a == target {
 			return true
 		}
 	}
 	return false
+}
+
+func GetShardForKey(key string, numShards int) int {
+	hasher := fnv.New32()
+	hasher.Write([]byte(key))
+	return int(hasher.Sum32())%numShards + 1
 }
 
 func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
@@ -38,7 +45,7 @@ func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 		shards := make(map[int]struct{})
 		for _, val := range setup.shardMap.GetState().ShardsToNodes {
 			if containsString(val, name) {
-				shards[val] = struct{}{}
+				shards[GetShardForKey(name, setup.shardMap.NumShards())] = struct{}{}
 			}
 		}
 		setup.nodes[name] = hoplite.MakeNode(

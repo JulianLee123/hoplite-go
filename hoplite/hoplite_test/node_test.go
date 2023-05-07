@@ -2,17 +2,10 @@ package hoplitetest
 
 import (
 	"fmt"
-	"hash/fnv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func GetShardForKey(key string, numShards int) int {
-	hasher := fnv.New32()
-	hasher.Write([]byte(key))
-	return int(hasher.Sum32())%numShards + 1
-}
 
 func TestOneNodeError(t *testing.T) {
 	setup := MakeTestSetup(MakeBasicOneShard())
