@@ -39,7 +39,11 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards in
 }
 
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args []string, objIdToObj map[string][]byte) int {
-	objIdCounter += 1
+	if taskId == 1 {
+		objIdCounter += 2
+	} else {
+		objIdCounter += 3
+	}
 	go scheduler.ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter)
 	return objIdCounter
 }

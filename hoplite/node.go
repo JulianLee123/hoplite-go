@@ -5,6 +5,7 @@ package hoplite
 import (
 	"context"
 	"math"
+	"strconv"
 	"sync"
 
 	"hoplite.go/hoplite/proto"
@@ -70,11 +71,16 @@ func (node *Node) Shutdown() {
 //methods associated w/ object management
 // methods associated with worker
 
-func (node *Node) RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
+func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
 	if request.TaskId == 1 {
-		node.SimulateCalcTask(ctx, request.ObjId, request.RetObjId, request.ObjIdToObj)
+		argId, _ := strconv.Atoi(request.ObjId)
+		argId -= 1
+		node.SimulateCalcTask(ctx, strconv.Itoa(argId), request.ObjId, request.ObjIdToObj)
 	} else if request.TaskId == 2 {
-		node.SimulateCalcWithPromiseTask(ctx, request.ObjId, request.ObjId2, request.RetObjId, request.ObjIdToObj)
+		argId, _ := strconv.Atoi(request.ObjId)
+		id1 := argId - 2
+		id2 := argId - 1
+		node.SimulateCalcWithPromiseTask(ctx, strconv.Itoa(id1), strconv.Itoa(id2), request.ObjId, request.ObjIdToObj)
 	}
 	//TODO: switch case
 	return nil, nil
