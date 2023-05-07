@@ -2,34 +2,34 @@ package hoplite
 
 /*
 type TaskScheduler struct {
-	nodeBusy []bool          
-	objIds []string //list of used objIds          
+	nodeBusy []bool
+	objIds []string //list of used objIds
 	clientPool ClientPool
 	shutdown   chan struct{}
 	numNods int
 	mu         sync.RWMutex
 }
 
-var objIdCounter = 0; 
+var objIdCounter = 0;
 
 func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}) *TaskScheduler {
-	numNodes := len(clientPool.clients) 
+	numNodes := len(clientPool.clients)
 	busy := make([]bool, numNodes)
 	for i := range numNodes {
 		busy[i] = false
 	}
 	scheduler := TaskScheduler{
-		nodeBusy: busy, 
-		objIds: make([]string), 
-		clientPool: clientPool, 
-		shutdown: doneCh, 
+		nodeBusy: busy,
+		objIds: make([]string),
+		clientPool: clientPool,
+		shutdown: doneCh,
 	}
-	return &server; 
+	return &server;
 }
 
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args string[], objIdToObj map<string, []byte>) (string, err) {
 	objIdCounter += 1
-	go ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter) 
+	go ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter)
 	return objIdCounter
 }
 
@@ -42,7 +42,7 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args string[], 
 	var response *proto.OdsGetResponse
 
 	client, err := scheduler.clientPool.GetClient(nodes[randNode])
-	for { //TODO: HOW TO CHECK IF NODE BUSY? 
+	for { //TODO: HOW TO CHECK IF NODE BUSY?
 		if (iterator%len(nodes)) == randNode && !start {
 			return nil, false, err
 		}
@@ -71,7 +71,7 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
 	var response *proto.OdsGetResponse
 
 	client, err := scheduler.clientPool.GetClient(nodes[randNode])
-	for { //TODO: HOW TO CHECK IF NODE BUSY? 
+	for { //TODO: HOW TO CHECK IF NODE BUSY?
 		if (iterator%len(nodes)) == randNode && !start {
 			return nil, false, err
 		}
