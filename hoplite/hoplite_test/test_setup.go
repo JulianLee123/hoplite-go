@@ -17,6 +17,15 @@ type TestSetup struct {
 	ctx        context.Context
 }
 
+func containsString(arr []string, target string) {
+	for _, a := range arr {
+		if a == target {
+			return true
+		}
+	}
+	return false
+}
+
 func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 	logrus.SetLevel(logrus.DebugLevel)
 	setup := TestSetup{
@@ -26,10 +35,17 @@ func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 	}
 	setup.shardMap.Update(&shardMap)
 	for name := range setup.shardMap.Nodes() {
+		shards := make(map[int]struct{})
+		for _, val := range setup.shardMap.GetState().ShardsToNodes {
+			if containsString(val, name) {
+				shards[val] = struct{}{}
+			}
+		}
 		setup.nodes[name] = hoplite.MakeNode(
 			name,
 			setup.shardMap,
 			&setup.clientPool,
+			shards,
 		)
 	}
 	setup.clientPool.Setup(setup.nodes)
@@ -51,6 +67,17 @@ func MakeBasicOneShard() hoplite.ShardMapState {
 	}
 }
 
+func MakeBasicTwoShard() hoplite.ShardMapState {
+	return hoplite.ShardMapState{
+		NumShards: 2,
+		Nodes:     makeNodeInfos(2),
+		ShardsToNodes: map[int][]string{
+			1: {"n1"},
+			2: {"n2"},
+		},
+	}
+}
+
 func makeNodeInfos(n int) map[string]hoplite.NodeInfo {
 	nodes := make(map[string]hoplite.NodeInfo)
 	for i := 1; i <= n; i++ {
@@ -65,4 +92,15 @@ func (ts *TestSetup) Get(key string, client string) (*proto.OdsGetResponse, erro
 		return nil, nil
 	}
 	return gotClient.OdsGet(ts.ctx, &proto.OdsGetRequest{Key: key})
+}
+
+func (ts *TestSetup) Set(key string, node string) (*proto.OdsSetResponse, error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil, nil
+	}
+	valMap := make(map[string]bool)
+	valMap[node] = true
+	value := &proto.OdsInfo{LocationInfos: valMap}
+	return gotClient.OdsSet(ts.ctx, &proto.OdsSetRequest{Key: key, Value: value})
 }

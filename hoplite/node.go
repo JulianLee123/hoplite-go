@@ -42,12 +42,12 @@ type Node struct {
 	ods Ods
 }
 
-func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool) *Node {
+func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool, shards map[int]struct{}) *Node {
 	localObjStore := LocalObjStore{
 		mp: make(map[string]LocalObj),
 	}
 	ods := Ods{
-		ourShards: make(map[int]struct{}),
+		ourShards: shards,
 		shard:     make([]OdsShard, shardMap.NumShards()+1),
 		shardMap:  shardMap,
 	}

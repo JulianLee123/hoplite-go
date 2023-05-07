@@ -296,7 +296,7 @@ func (node *Node) OdsGetRes(
 	defer node.ods.shard[targetShard].mu.RUnlock()
 	if node.ods.shard[targetShard].data == nil {
 		//config change --> no longer have this shard
-		return nil, status.Error(codes.NotFound, "server no longer hosts shard for this odsInfo")
+		return nil, status.Error(codes.NotFound, "server no longer hosts shard for this odsInfo 2")
 	}
 
 	val, exists := node.ods.shard[targetShard].data[key]

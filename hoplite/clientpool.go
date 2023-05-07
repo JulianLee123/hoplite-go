@@ -30,13 +30,8 @@ func makeConnection(addr string) (proto.HopliteClient, error) {
  */
 type ClientPool interface {
 	/*
-<<<<<<< HEAD
 	 * Returns a client for a given node if one can be created. Returns (nil, err)
 	 * otherwise. Errors are not cached, so subsequent calls may return a valid client.
-=======
-	 * Returns a HopliteClient for a given node if one can be created. Returns (nil, err)
-	 * otherwise. Errors are not cached, so subsequent calls may return a valid HopliteClient.
->>>>>>> 7a2e848 (beginning of client testing framework)
 	 */
 	GetClient(nodeName string) (proto.HopliteClient, error)
 }
