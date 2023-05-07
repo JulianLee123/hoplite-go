@@ -3,13 +3,8 @@ package hoplite
 //General node and node worker method implementation
 
 import (
-	"context"
 	"sync"
-
 	"hoplite.go/hoplite/proto"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type OdsShard struct {
@@ -25,6 +20,7 @@ type Ods struct {
 
 type LocalObj struct {
 	data []byte
+	isPartial bool
 	mu    sync.RWMutex
 }
 
@@ -68,20 +64,6 @@ func (node *Node) Shutdown() {
 
 /*
 //methods associated w/ object management
-
-func (server *Ods) GetGlobalObject(ctx context.Context, objId string, objIdToObj map[string][]byte) []byte {
-	val, exists := objIdToObj[objId]
-
-	if exists { //objectId in the pre-specified params
-		return val
-	}
-
-	getRes, err := server.OdsGetRes(ctx, &proto.OdsGetRequest{Key: objId})
-
-	if err != nil && getRes.Value != nil {
-		return getRes.Value.LocationInfos[objId]
-	}
-}
 
 // methods associated with worker
 func RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {

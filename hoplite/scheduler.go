@@ -1,5 +1,6 @@
 package hoplite
 
+/*
 type TaskScheduler struct {
 	nodeBusy []bool          
 	objIds []string //list of used objIds          
@@ -90,3 +91,4 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
 		}
 	}
 }
+*/
