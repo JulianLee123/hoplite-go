@@ -13,6 +13,7 @@ type TestSetup struct {
 	shardMap   *hoplite.ShardMap
 	nodes      map[string]*hoplite.Node
 	clientPool TestClientPool
+	ods        *hoplite.Ods
 	ctx        context.Context
 }
 
@@ -32,6 +33,7 @@ func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 		)
 	}
 	setup.clientPool.Setup(setup.nodes)
+	//setup.node = hoplite.MakeNode("main", setup.shardMap, &setup.clientPool)
 
 	logrus.WithFields(
 		logrus.Fields{"nodes": len(shardMap.Nodes), "shards": len(shardMap.ShardsToNodes)},
@@ -59,5 +61,8 @@ func makeNodeInfos(n int) map[string]hoplite.NodeInfo {
 
 func (ts *TestSetup) Get(key string, client string) (*proto.OdsGetResponse, error) {
 	gotClient, _ := ts.clientPool.GetClient(client)
+	if gotClient == nil {
+		return nil, nil
+	}
 	return gotClient.OdsGet(ts.ctx, &proto.OdsGetRequest{Key: key})
 }
