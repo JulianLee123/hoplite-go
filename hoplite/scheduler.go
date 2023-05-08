@@ -2,6 +2,7 @@ package hoplite
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -48,13 +49,13 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 
 	for {
 		var i int = 0
-		for key, _ := range scheduler.nodes {
+		for key := range scheduler.nodes {
 			if scheduler.nodeBusy[i] {
 				continue
 			}
-			i += 1
 			client, err := scheduler.clientPool.GetClient(key)
 			if err != nil {
+				i += 1
 				continue
 			} else {
 				ctx := context.Background()
@@ -75,20 +76,27 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 }
 
 func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
-	for {
-		var i int = 0
-		for key, _ := range scheduler.nodes {
-			client, err := scheduler.clientPool.GetClient(key)
-			if err != nil {
-				i += 1
-				continue
-			} else {
-				ctx := context.Background()
-				response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
-				scheduler.nodeBusy[i] = false
-				return response.Res, err
-			}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	var i int = 0
+
+	for key := range scheduler.nodes {
+		client, err := scheduler.clientPool.GetClient(key)
+		if err != nil {
+			continue
 		}
+
+		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
+		scheduler.nodeBusy[i] = false
+
+		i += 1
+
+		if err == nil {
+			return response.Res, nil
+		}
+		// If there was an error continue to the next node
 	}
 
+	// If all nodes failed, return an error
+	return nil, errors.New("all nodes failed")
 }

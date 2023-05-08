@@ -5,7 +5,6 @@ package hoplite
 import (
 	"context"
 	"math"
-	"strconv"
 	"sync"
 
 	"hoplite.go/hoplite/proto"
@@ -61,7 +60,7 @@ func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool) *Node 
 		localObjStore: localObjStore,
 		ods:           ods,
 	}
-	for _, i := range shardMap.ShardsForNode(nodeName){
+	for _, i := range shardMap.ShardsForNode(nodeName) {
 		node.ods.shard[i].data = make(map[string]*proto.OdsInfo)
 		node.ods.ourShards[i] = struct{}{}
 	}
@@ -72,35 +71,35 @@ func (node *Node) Shutdown() {
 	node.shutdown <- struct{}{}
 }
 
-
 //methods associated w/ object management
 // methods associated with worker
 
-func (node *Node) RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
+func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
 	if request.TaskId == 1 {
-		argId, _ := strconv.Atoi(request.ObjId)
-		argId -= 1
-		node.SimulateCalcTask(ctx, strconv.Itoa(argId), request.ObjId, request.ObjIdToObj)
+		go node.SimulateCalcTask(ctx, request.Args[0], request.ObjId, request.ObjIdToObj)
 	} else if request.TaskId == 2 {
-		argId, _ := strconv.Atoi(request.ObjId)
-		id1 := argId - 2
-		id2 := argId - 1
-		node.SimulateCalcWithPromiseTask(ctx, strconv.Itoa(id1), strconv.Itoa(id2), request.ObjId, request.ObjIdToObj)
+		go node.SimulateCalcWithPromiseTask(ctx, request.Args[0], request.Args[1], request.ObjId, request.ObjIdToObj)
 	}
-	return nil, nil
+	return &proto.TaskResponse{}, nil
 }
 
 func (node *Node) SimulateCalcTask(ctx context.Context, objId string, retObjId string, objIdToObj map[string][]byte) {
 	//Sample task that extracts the prime numbers from the provided array of type uint64
+	var intArr []uint64
 	objBuff := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
-	intArr := BytesToUInt64Arr(objBuff)
+	intArr = BytesToUInt64Arr(objBuff)
+
 	optArr := make([]uint64, 0)
 	for _, val := range intArr {
+		check := true
 		for j := uint64(2); j < uint64(math.Sqrt(float64(val)))+1; j++ {
 			if val%j == 0 {
-				optArr = append(optArr, val)
+				check = false
 				break
 			}
+		}
+		if check {
+			optArr = append(optArr, val)
 		}
 	}
 	optByteArr := UInt64ToBytesArr(optArr)

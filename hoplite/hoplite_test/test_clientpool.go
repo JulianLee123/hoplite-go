@@ -87,7 +87,7 @@ type TestClient struct {
 	deleteResponse *proto.OdsDeleteResponse
 
 	broadcastObjResponse *proto.BroadcastObjResponse
-	deleteObjResponse *proto.DeleteObjResponse
+	deleteObjResponse    *proto.DeleteObjResponse
 
 	taskResponse    *proto.TaskResponse
 	taskAnsResponse *proto.TaskAnsResponse
@@ -221,12 +221,6 @@ func (c *TestClient) GetTaskAns(ctx context.Context, req *proto.TaskAnsRequest, 
 	if c.err != nil {
 		return nil, c.err
 	}
-	if c.latencyInjection != nil {
-		time.Sleep(*c.latencyInjection)
-	}
-	if c.taskAnsResponse != nil {
-		return c.taskAnsResponse, nil
-	}
 	return c.server.RetrieveTaskAns(ctx, req)
 }
 
@@ -243,5 +237,5 @@ func (c *TestClient) ScheduleTask(ctx context.Context, req *proto.TaskRequest, o
 	if c.taskResponse != nil {
 		return c.taskResponse, nil
 	}
-	return c.server.RunTask(ctx, req)
+	return c.server.ScheduleTask(ctx, req)
 }

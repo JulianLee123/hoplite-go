@@ -15,15 +15,15 @@ import (
 
 //OBJECT MANAGEMENT
 
-//currently DOES NOT handle partial copies
+// currently DOES NOT handle partial copies
 func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj map[string][]byte, ch chan struct{}) []byte {
 	//synchronous: runs until successful (can always be successful if 0-1 nodes down)
 	//option to return via channel done
-	
+
 	//search pre-set
 	obj, exists := objIdToObj[objId]
 	if exists { //objectId in the pre-specified params
-		if ch != nil{
+		if ch != nil {
 			ch <- struct{}{}
 		}
 		return obj
@@ -38,7 +38,7 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 			if !objLocal.isPartial {
 				defer objLocal.mu.RUnlock()
 				defer node.localObjStore.mu.RUnlock()
-				if ch != nil{
+				if ch != nil {
 					ch <- struct{}{}
 				}
 				return objLocal.data
@@ -62,7 +62,7 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 							node.localObjStore.mu.Lock()
 							defer node.localObjStore.mu.Unlock()
 							node.localObjStore.mp[objId] = &LocalObj{data: response.Object, isPartial: false}
-							if ch != nil{
+							if ch != nil {
 								ch <- struct{}{}
 							}
 							return response.Object
@@ -350,7 +350,7 @@ func (node *Node) OdsSetRes(
 
 	//if new key, do some setup
 	_, exists := node.ods.shard[targetShard].data[key]
-	if !exists{
+	if !exists {
 		node.ods.shard[targetShard].data[key] = &proto.OdsInfo{Size: 0, LocationInfos: make(map[string]bool)}
 	}
 	//add new info
@@ -361,7 +361,7 @@ func (node *Node) OdsSetRes(
 		completionStatusToAdd = request.Value.LocationInfos[k]
 	}
 	node.ods.shard[targetShard].data[key].LocationInfos[nodeToAdd] = completionStatusToAdd
-	if node.ods.shard[targetShard].data[key].Size < request.Value.Size{
+	if node.ods.shard[targetShard].data[key].Size < request.Value.Size {
 		node.ods.shard[targetShard].data[key].Size = request.Value.Size
 	}
 
