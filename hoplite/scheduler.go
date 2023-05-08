@@ -1,9 +1,10 @@
 package hoplite
 
 import (
-	/*"math/rand"
+	"context"
 	"strconv"
 	"sync"
+	"time"
 
 	"hoplite.go/hoplite/proto"*/
 )
@@ -38,7 +39,11 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards in
 }
 
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args []string, objIdToObj map[string][]byte) int {
-	objIdCounter += 1
+	if taskId == 1 {
+		objIdCounter += 2
+	} else {
+		objIdCounter += 3
+	}
 	go scheduler.ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter)
 	return objIdCounter
 }
@@ -47,52 +52,48 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 
 	for {
 		var i int = 0
-		for _, val := range scheduler.nodes {
+		for key, _ := range scheduler.nodes {
 			if scheduler.nodeBusy[i] {
 				continue
 			}
 			i += 1
-			client, err := scheduler.clientPool.GetClient(val)
+			client, err := scheduler.clientPool.GetClient(key)
 			if err != nil {
 				continue
 			} else {
-				response, err = client.Call(scheduler.RunTask(proto.TaskRequest{ObjId: strconv.Itoa(objIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj}))
+				ctx := context.Background()
+				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(objIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
 				if err != nil {
 					continue
 				}
+				if response == nil {
+					continue
+				}
 				scheduler.nodeBusy[i] = true
-				break
+				return
 			}
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 
 }
 
-func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
-	randNode := rand.Intn(len(nodes)) //choose random node
-	iterator := randNode
-	start := true
-	var response *proto.OdsGetResponse
-
-	client, err := scheduler.clientPool.GetClient(nodes[randNode])
-	for { //TODO: HOW TO CHECK IF NODE BUSY?
-		if (iterator%len(nodes)) == randNode && !start {
-			return nil, false, err
-		}
-		start = false
-		client, err = scheduler.clientPool.GetClient(nodes[iterator%len(nodes)])
-		if err != nil {
-			iterator += 1
-			continue
-		} else {
-			response, err = client.Call(scheduler.GetTaskAns(TaskAnsRequest{obj_id: strconv.Itoa(objId)}))
+func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
+	for {
+		var i int = 0
+		for key, _ := range scheduler.nodes {
+			client, err := scheduler.clientPool.GetClient(key)
 			if err != nil {
-				iterator += 1
+				i += 1
 				continue
+			} else {
+				ctx := context.Background()
+				response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
+				scheduler.nodeBusy[i] = false
+				return response.Res, err
 			}
-			scheduler.nodeBusy[iterator%len(nodes)] = false
-			break
 		}
 	}
+
 }
 */

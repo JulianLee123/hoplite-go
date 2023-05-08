@@ -3,10 +3,12 @@ package hoplite
 //General node and node worker method implementation
 
 import (
-	"sync"
 	"context"
-	"hoplite.go/hoplite/proto"
 	"math"
+	"strconv"
+	"sync"
+
+	"hoplite.go/hoplite/proto"
 )
 
 type OdsShard struct {
@@ -75,29 +77,40 @@ func (node *Node) Shutdown() {
 // methods associated with worker
 
 func (node *Node) RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
+func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
+	if request.TaskId == 1 {
+		argId, _ := strconv.Atoi(request.ObjId)
+		argId -= 1
+		node.SimulateCalcTask(ctx, strconv.Itoa(argId), request.ObjId, request.ObjIdToObj)
+	} else if request.TaskId == 2 {
+		argId, _ := strconv.Atoi(request.ObjId)
+		id1 := argId - 2
+		id2 := argId - 1
+		node.SimulateCalcWithPromiseTask(ctx, strconv.Itoa(id1), strconv.Itoa(id2), request.ObjId, request.ObjIdToObj)
+	}
 	//TODO: switch case
 	return nil, nil
 }
 
-func (node *Node) SimulateCalcTask(ctx context.Context, objId string, retObjId string, objIdToObj map[string][]byte){
-//Sample task that extracts the prime numbers from the provided array of type uint64
+func (node *Node) SimulateCalcTask(ctx context.Context, objId string, retObjId string, objIdToObj map[string][]byte) {
+	//Sample task that extracts the prime numbers from the provided array of type uint64
 	objBuff := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
 	intArr := BytesToUInt64Arr(objBuff)
 	optArr := make([]uint64, 0)
-	for _, val := range intArr{
-		for j := uint64(2); j < uint64(math.Sqrt(float64(val))) + 1; j++{
-			if val % j == 0{
+	for _, val := range intArr {
+		for j := uint64(2); j < uint64(math.Sqrt(float64(val)))+1; j++ {
+			if val%j == 0 {
 				optArr = append(optArr, val)
 				break
 			}
 		}
 	}
 	optByteArr := UInt64ToBytesArr(optArr)
-	node.PutGlobalObject(ctx, retObjId, optByteArr) 
-	return 
+	node.PutGlobalObject(ctx, retObjId, optByteArr)
+	return
 }
 
-func (node *Node) SimulateCalcWithPromiseTask(ctx context.Context, objId string, objId2 string, retObjId string, objIdToObj map[string][]byte){
+func (node *Node) SimulateCalcWithPromiseTask(ctx context.Context, objId string, objId2 string, retObjId string, objIdToObj map[string][]byte) {
 	//Sample task testing promises: pairwise multiplies elements in obj1 and obj2
 	objBuff1 := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
 	objBuff2 := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
@@ -105,18 +118,18 @@ func (node *Node) SimulateCalcWithPromiseTask(ctx context.Context, objId string,
 	primesArr2 := BytesToUInt64Arr(objBuff2)
 	optArr := make([]uint64, 0)
 	for i := 0; i < len(primesArr1) && i < len(primesArr2); i++ {
-		optArr = append(optArr, primesArr1[i] * primesArr2[i])
+		optArr = append(optArr, primesArr1[i]*primesArr2[i])
 	}
 	optByteArr := UInt64ToBytesArr(optArr)
-	node.PutGlobalObject(ctx, retObjId, optByteArr) 
-	return 
+	node.PutGlobalObject(ctx, retObjId, optByteArr)
+	return
 }
 
-func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId string, objIdToObj map[string][]byte){
+func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId string, objIdToObj map[string][]byte) {
 	//Reduces the provided objects: A[i] in the output is the product of the ith entries of the provided objects (for all
 	//objects for which the ith entry exists)
 	//Example of how useful work can be done even when object is waiting to download more object info from other nodes
-	
+
 	//Channel will be set to true once object is available (if it's on another node, then once it's broadcasted)
 	chans := make(map[int]chan struct{})
 	for i := 1; i <= len(objIds); i++ {
@@ -129,23 +142,23 @@ func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId
 	for reductions = 0; reductions < len(objIds); {
 		for i := 1; i <= len(chans); i++ {
 			select {
-				case <-chans[i]:
-					//This node has access to the requested object --> start download
-					objBuff := node.GetGlobalObject(ctx, objIds[i], objIdToObj, nil)
-					intArr := BytesToUInt64Arr(objBuff)
-					j := 1
-					for ; j < len(optArr) && j < len(intArr); j++ {
-						optArr[j] = optArr[j] * intArr[j]
-					}
-					for ; j < len(intArr); j++{
-						optArr = append(optArr, intArr[j])
-					}
+			case <-chans[i]:
+				//This node has access to the requested object --> start download
+				objBuff := node.GetGlobalObject(ctx, objIds[i], objIdToObj, nil)
+				intArr := BytesToUInt64Arr(objBuff)
+				j := 1
+				for ; j < len(optArr) && j < len(intArr); j++ {
+					optArr[j] = optArr[j] * intArr[j]
+				}
+				for ; j < len(intArr); j++ {
+					optArr = append(optArr, intArr[j])
+				}
 			}
 		}
 	}
 	optByteArr := UInt64ToBytesArr(optArr)
-	node.PutGlobalObject(ctx, retObjId, optByteArr) 
-	return 
+	node.PutGlobalObject(ctx, retObjId, optByteArr)
+	return
 }
 
 func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsRequest) (*proto.TaskAnsResponse, error) {
@@ -154,7 +167,6 @@ func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsReq
 }
 
 /*
-
 	fnv32 hash function taken from concurrent map implementation linked in assignment description
 
 (https://github.com/orcaman/concurrent-map/blob/master/concurrent_map.go#L345-L354)
