@@ -1,14 +1,14 @@
 package hoplite
 
 import (
-	"math/rand"
+	/*"math/rand"
 	"strconv"
 	"sync"
 
-	"hoplite.go/hoplite/proto"
+	"hoplite.go/hoplite/proto"*/
 )
 
-type TaskScheduler struct {
+/*type TaskScheduler struct {
 	nodeBusy   []bool
 	objIds     []string //list of used objIds
 	clientPool ClientPool
@@ -95,3 +95,4 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, err) {
 		}
 	}
 }
+*/

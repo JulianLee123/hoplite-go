@@ -61,7 +61,7 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 							//save object in local object store and return it
 							node.localObjStore.mu.Lock()
 							defer node.localObjStore.mu.Unlock()
-							node.localObjStore.mp[objId] = LocalObj{data: response.Object, isPartial: false}
+							node.localObjStore.mp[objId] = &LocalObj{data: response.Object, isPartial: false}
 							if ch != nil{
 								ch <- struct{}{}
 							}
@@ -81,7 +81,7 @@ func (node *Node) PutGlobalObject(ctx context.Context, objId string, obj []byte)
 	//Synchronous: runs until successful (can always be successful if 0-1 nodes down)
 	node.localObjStore.mu.Lock()
 	defer node.localObjStore.mu.Unlock()
-	node.localObjStore.mp[objId] = LocalObj{data: obj, isPartial: false}
+	node.localObjStore.mp[objId] = &LocalObj{data: obj, isPartial: false}
 
 	mp := make(map[string]bool)
 	mp[node.nodeName] = true //storing a complete object
@@ -348,6 +348,12 @@ func (node *Node) OdsSetRes(
 		return nil, status.Error(codes.NotFound, "server no longer hosts shard for this kv")
 	}
 
+	//if new key, do some setup
+	_, exists := node.ods.shard[targetShard].data[key]
+	if !exists{
+		node.ods.shard[targetShard].data[key] = &proto.OdsInfo{Size: 0, LocationInfos: make(map[string]bool)}
+	}
+	//add new info
 	nodeToAdd := ""
 	completionStatusToAdd := false
 	for k := range request.Value.LocationInfos { //only holds 1 key
@@ -355,6 +361,9 @@ func (node *Node) OdsSetRes(
 		completionStatusToAdd = request.Value.LocationInfos[k]
 	}
 	node.ods.shard[targetShard].data[key].LocationInfos[nodeToAdd] = completionStatusToAdd
+	if node.ods.shard[targetShard].data[key].Size < request.Value.Size{
+		node.ods.shard[targetShard].data[key].Size = request.Value.Size
+	}
 
 	return &proto.OdsSetResponse{}, nil
 }

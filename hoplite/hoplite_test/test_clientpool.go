@@ -86,6 +86,12 @@ type TestClient struct {
 	setResponse    *proto.OdsSetResponse
 	deleteResponse *proto.OdsDeleteResponse
 
+	broadcastObjResponse *proto.BroadcastObjResponse
+	deleteObjResponse *proto.DeleteObjResponse
+
+	taskResponse    *proto.TaskResponse
+	taskAnsResponse *proto.TaskAnsResponse
+
 	latencyInjection *time.Duration
 }
 
@@ -177,17 +183,65 @@ func (c *TestClient) SetLatencyInjection(duration time.Duration) {
 }
 
 func (c *TestClient) BroadcastObj(ctx context.Context, req *proto.BroadcastObjRequest, opts ...grpc.CallOption) (*proto.BroadcastObjResponse, error) {
-	return nil, nil
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	atomic.AddUint64(&c.requestsSent, 1)
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.latencyInjection != nil {
+		time.Sleep(*c.latencyInjection)
+	}
+	if c.broadcastObjResponse != nil {
+		return c.broadcastObjResponse, nil
+	}
+	return c.server.BroadcastLocalObject(ctx, req)
 }
 
-func (c *TestClient) DeleteObj(ctx context.Context, in *proto.DeleteObjRequest, opts ...grpc.CallOption) (*proto.DeleteObjResponse, error) {
-	return nil, nil
+func (c *TestClient) DeleteObj(ctx context.Context, req *proto.DeleteObjRequest, opts ...grpc.CallOption) (*proto.DeleteObjResponse, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	atomic.AddUint64(&c.requestsSent, 1)
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.latencyInjection != nil {
+		time.Sleep(*c.latencyInjection)
+	}
+	if c.deleteObjResponse != nil {
+		return c.deleteObjResponse, nil
+	}
+	return c.server.DeleteLocalObject(ctx, req)
 }
 
-func (c *TestClient) GetTaskAns(ctx context.Context, in *proto.TaskAnsRequest, opts ...grpc.CallOption) (*proto.TaskAnsResponse, error) {
-	return nil, nil
+func (c *TestClient) GetTaskAns(ctx context.Context, req *proto.TaskAnsRequest, opts ...grpc.CallOption) (*proto.TaskAnsResponse, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	atomic.AddUint64(&c.requestsSent, 1)
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.latencyInjection != nil {
+		time.Sleep(*c.latencyInjection)
+	}
+	if c.taskAnsResponse != nil {
+		return c.taskAnsResponse, nil
+	}
+	return c.server.RetrieveTaskAns(ctx, req)
 }
 
-func (c *TestClient) ScheduleTask(ctx context.Context, in *proto.TaskRequest, opts ...grpc.CallOption) (*proto.TaskResponse, error) {
-	return nil, nil
+func (c *TestClient) ScheduleTask(ctx context.Context, req *proto.TaskRequest, opts ...grpc.CallOption) (*proto.TaskResponse, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	atomic.AddUint64(&c.requestsSent, 1)
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.latencyInjection != nil {
+		time.Sleep(*c.latencyInjection)
+	}
+	if c.taskResponse != nil {
+		return c.taskResponse, nil
+	}
+	return c.server.RunTask(ctx, req)
 }

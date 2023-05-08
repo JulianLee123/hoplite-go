@@ -28,7 +28,7 @@ type LocalObj struct {
 }
 
 type LocalObjStore struct {
-	mp map[string]LocalObj
+	mp map[string]*LocalObj
 	mu sync.RWMutex
 }
 
@@ -43,12 +43,12 @@ type Node struct {
 	ods Ods
 }
 
-func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool, shards map[int]struct{}) *Node {
+func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool) *Node {
 	localObjStore := LocalObjStore{
-		mp: make(map[string]LocalObj),
+		mp: make(map[string]*LocalObj),
 	}
 	ods := Ods{
-		ourShards: shards,
+		ourShards: make(map[int]struct{}),
 		shard:     make([]OdsShard, shardMap.NumShards()+1),
 		shardMap:  shardMap,
 	}
@@ -59,6 +59,10 @@ func MakeNode(nodeName string, shardMap *ShardMap, clientPool ClientPool, shards
 		localObjStore: localObjStore,
 		ods:           ods,
 	}
+	for _, i := range shardMap.ShardsForNode(nodeName){
+		node.ods.shard[i].data = make(map[string]*proto.OdsInfo)
+		node.ods.ourShards[i] = struct{}{}
+	}
 	return &node
 }
 
@@ -66,14 +70,14 @@ func (node *Node) Shutdown() {
 	node.shutdown <- struct{}{}
 }
 
-/*
+
 //methods associated w/ object management
 // methods associated with worker
 
-func RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
+func (node *Node) RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
 	//TODO: switch case
 	return nil, nil
-}*/
+}
 
 func (node *Node) SimulateCalcTask(ctx context.Context, objId string, retObjId string, objIdToObj map[string][]byte){
 //Sample task that extracts the prime numbers from the provided array of type uint64
@@ -144,9 +148,9 @@ func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId
 	return 
 }
 
-func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsRequest) *proto.TaskAnsResponse {
+func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsRequest) (*proto.TaskAnsResponse, error) {
 	//runs until outcome available: up to taskScheduler to make sure object eventually appears in case of node failure
-	return &proto.TaskAnsResponse{Res: node.GetGlobalObject(ctx, request.ObjId, nil, nil)}
+	return &proto.TaskAnsResponse{Res: node.GetGlobalObject(ctx, request.ObjId, nil, nil)}, nil
 }
 
 /*

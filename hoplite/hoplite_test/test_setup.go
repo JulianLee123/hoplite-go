@@ -51,13 +51,14 @@ func MakeBasicOneShard() hoplite.ShardMapState {
 	}
 }
 
-func MakeBasicTwoShard() hoplite.ShardMapState {
+func MakeBasicMultiShard() hoplite.ShardMapState {
 	return hoplite.ShardMapState{
-		NumShards: 2,
-		Nodes:     makeNodeInfos(2),
+		NumShards: 3,
+		Nodes:     makeNodeInfos(1),
 		ShardsToNodes: map[int][]string{
 			1: {"n1"},
-			2: {"n2"},
+			2: {"n1"},
+			3: {"n1"},
 		},
 	}
 }
@@ -70,18 +71,32 @@ func makeNodeInfos(n int) map[string]hoplite.NodeInfo {
 	return nodes
 }
 
-func (ts *TestSetup) Get(key string, client string) (*proto.OdsGetResponse, error) {
+func (ts *TestSetup) OdsGet(client string, key string) (*proto.OdsInfo, bool, error) {
 	gotClient, _ := ts.clientPool.GetClient(client)
 	if gotClient == nil {
-		return nil, nil
+		return nil, false, nil
 	}
-	return gotClient.OdsGet(ts.ctx, &proto.OdsGetRequest{Key: key})
+	res, err :=  gotClient.OdsGet(ts.ctx, &proto.OdsGetRequest{Key: key})
+	if err != nil{
+		return nil, false, err
+	}
+	return res.Value, res.WasFound, err
 }
 
-func (ts *TestSetup) Set(key string, node string, val *proto.OdsInfo) (*proto.OdsSetResponse, error) {
+func (ts *TestSetup) OdsSet(node string, key string, val *proto.OdsInfo) (error) {
 	gotClient, _ := ts.clientPool.GetClient(node)
 	if gotClient == nil {
-		return nil, nil
+		return nil
 	}
-	return gotClient.OdsSet(ts.ctx, &proto.OdsSetRequest{Key: key, Value: val})
+	_, err := gotClient.OdsSet(ts.ctx, &proto.OdsSetRequest{Key: key, Value: val})
+	return err
+}
+
+func (ts *TestSetup) OdsDelete(node string, key string, nodeEntryToDelete string) (error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil
+	}
+	_, err := gotClient.OdsDelete(ts.ctx, &proto.OdsDeleteRequest{Key: key, NodeName: nodeEntryToDelete})
+	return err
 }
