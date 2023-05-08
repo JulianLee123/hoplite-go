@@ -62,10 +62,10 @@ func TestBasicScheduleMultiNode(t *testing.T) {
 	// assert.Nil(t, err)
 
 	//add the byteArray as a global object
-	setup.nodes["n1"].PutGlobalObject(context.Background(), "0", byteArray)
 
 	//schedule task of id 1 to filter primes out of the array
 	objectMap := make(map[string][]byte)
+	objectMap["0"] = byteArray
 	result := scheduler.ScheduleTask(1, []string{"0"}, objectMap)
 
 	time.Sleep(100 * time.Millisecond)
