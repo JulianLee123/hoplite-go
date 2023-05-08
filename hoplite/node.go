@@ -165,7 +165,6 @@ func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsReq
 
 /*
 	fnv32 hash function taken from concurrent map implementation linked in assignment description
-
 (https://github.com/orcaman/concurrent-map/blob/master/concurrent_map.go#L345-L354)
 */
 func fnv32(key string) int {

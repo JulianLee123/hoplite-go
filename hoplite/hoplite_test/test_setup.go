@@ -79,6 +79,17 @@ func MakeBasicMultiShard() hoplite.ShardMapState {
 	}
 }
 
+func MakeBasicTwoNodes() hoplite.ShardMapState {
+	return hoplite.ShardMapState{
+		NumShards: 2,
+		Nodes:     makeNodeInfos(1),
+		ShardsToNodes: map[int][]string{
+			1: {"n1"},
+			2: {"n2"},
+		},
+	}
+}
+
 func makeNodeInfos(n int) map[string]hoplite.NodeInfo {
 	nodes := make(map[string]hoplite.NodeInfo)
 	for i := 1; i <= n; i++ {
@@ -115,4 +126,46 @@ func (ts *TestSetup) OdsDelete(node string, key string, nodeEntryToDelete string
 	}
 	_, err := gotClient.OdsDelete(ts.ctx, &proto.OdsDeleteRequest{Key: key, NodeName: nodeEntryToDelete})
 	return err
+}
+
+func (ts *TestSetup) BroadcastObj(client string, objId string, start int) ([]byte, error) {
+	gotClient, _ := ts.clientPool.GetClient(client)
+	if gotClient == nil {
+		return nil, nil
+	}
+	res, err :=  gotClient.BroadcastObj(ts.ctx, &proto.BroadcastObjRequest{ObjectId: objId, Start: int32(start)})
+	if err != nil{
+		return nil, err
+	}
+	return res.Object, err
+}
+
+func (ts *TestSetup) DeleteObj(node string, objId string) (error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil
+	}
+	_, err := gotClient.DeleteObj(ts.ctx, &proto.DeleteObjRequest{ObjectId: objId})
+	return err
+}
+
+func (ts *TestSetup) ScheduleTask(node string, objId string, taskId int, args []string, objIdToObj map[string][]byte) (error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil
+	}
+	_, err := gotClient.ScheduleTask(ts.ctx, &proto.TaskRequest{ObjId: objId, TaskId: int32(taskId), Args: args, ObjIdToObj: objIdToObj})
+	return err
+}
+
+func (ts *TestSetup) GetTaskAns(node string, objId string) ([]byte, error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil, nil
+	}
+	res, err :=  gotClient.GetTaskAns(ts.ctx, &proto.TaskAnsRequest{ObjId: objId})
+	if err != nil{
+		return nil, err
+	}
+	return res.Res, err
 }
