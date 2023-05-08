@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"hoplite.go/hoplite/proto"*/
+	"hoplite.go/hoplite/proto"
 )
 
-/*type TaskScheduler struct {
+type TaskScheduler struct {
 	nodeBusy   []bool
 	objIds     []string //list of used objIds
 	clientPool ClientPool
@@ -39,11 +39,7 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards in
 }
 
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args []string, objIdToObj map[string][]byte) int {
-	if taskId == 1 {
-		objIdCounter += 2
-	} else {
-		objIdCounter += 3
-	}
+	objIdCounter += 1
 	go scheduler.ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter)
 	return objIdCounter
 }
@@ -96,4 +92,3 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
 	}
 
 }
-*/

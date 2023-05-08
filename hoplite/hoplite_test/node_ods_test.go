@@ -2,7 +2,6 @@ package hoplitetest
 
 import (
 	//"fmt"
-	"hash/fnv"
 	"testing"
 	"math/rand"
 	"time"
@@ -13,12 +12,6 @@ import (
 	"hoplite.go/hoplite"
 	"github.com/stretchr/testify/assert"
 )
-
-func GetShardForKey(key string, numShards int) int {
-	hasher := fnv.New32()
-	hasher.Write([]byte(key))
-	return int(hasher.Sum32())%numShards + 1
-}
 
 func TestOdsServerOneNode(t *testing.T) {
 	setup := MakeTestSetup(MakeBasicOneShard())

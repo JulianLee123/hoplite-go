@@ -77,7 +77,6 @@ func (node *Node) Shutdown() {
 // methods associated with worker
 
 func (node *Node) RunTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
-func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
 	if request.TaskId == 1 {
 		argId, _ := strconv.Atoi(request.ObjId)
 		argId -= 1
@@ -88,7 +87,6 @@ func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) 
 		id2 := argId - 1
 		node.SimulateCalcWithPromiseTask(ctx, strconv.Itoa(id1), strconv.Itoa(id2), request.ObjId, request.ObjIdToObj)
 	}
-	//TODO: switch case
 	return nil, nil
 }
 
