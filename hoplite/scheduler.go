@@ -20,7 +20,7 @@ type TaskScheduler struct {
 	nodes      map[string]*Node
 }
 
-var objIdCounter int = 0
+var objIdCounter int = 100
 
 func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards int, nodes map[string]*Node) *TaskScheduler {
 
@@ -61,7 +61,9 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				ctx := context.Background()
 				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = true
+				scheduler.mu.Unlock()
 				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(objIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
+				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = false
 				scheduler.mu.Unlock()
 				if err != nil {
@@ -91,7 +93,9 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
 
 		scheduler.mu.Lock()
 		scheduler.nodeBusy[i] = true
+		scheduler.mu.Unlock()
 		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
+		scheduler.mu.Lock()
 		scheduler.nodeBusy[i] = false
 		scheduler.mu.Unlock()
 
