@@ -50,7 +50,7 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 	for {
 		var i int = 0
 		for key := range scheduler.nodes {
-			if scheduler.nodeBusy[i] {
+			if scheduler.nodeBusy[i%len(scheduler.nodes)] {
 				continue
 			}
 			client, err := scheduler.clientPool.GetClient(key)
@@ -91,13 +91,8 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
 			continue
 		}
 
-		scheduler.mu.Lock()
-		scheduler.nodeBusy[i] = true
-		scheduler.mu.Unlock()
-		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
-		scheduler.mu.Lock()
+		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: objId})
 		scheduler.nodeBusy[i] = false
-		scheduler.mu.Unlock()
 
 		i += 1
 

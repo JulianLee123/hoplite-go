@@ -93,12 +93,12 @@ func TestBasicScheduleTwoNodes(t *testing.T) {
 
 	//schedule task of id 1 to filter primes out of the array
 	objectMap := make(map[string][]byte)
-	objectMap["0"] = byteArray1
-	objectMap["1"] = byteArray2
-	// result1 := scheduler.ScheduleTask(1, []string{"0"}, objectMap)
-	// result2 := scheduler.ScheduleTask(1, []string{"1"}, objectMap)
+	objectMap["first"] = byteArray1
+	objectMap["second"] = byteArray2
+	result1 := scheduler.ScheduleTask(1, []string{"first"}, objectMap)
+	result2 := scheduler.ScheduleTask(1, []string{"second"}, objectMap)
 
-	result := scheduler.ScheduleTask(2, []string{"0", "1"}, objectMap)
+	result := scheduler.ScheduleTask(2, []string{strconv.Itoa(result2), strconv.Itoa(result1)}, objectMap)
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -110,5 +110,5 @@ func TestBasicScheduleTwoNodes(t *testing.T) {
 	for i := range primes {
 		fmt.Println(primes[i])
 	}
-	assert.Equal(t, len(primes), 6)
+	assert.Equal(t, len(primes), 3)
 }
