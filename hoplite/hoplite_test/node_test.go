@@ -184,3 +184,31 @@ func TestTaskFiveNodesConcurrentTasks(t *testing.T) {
 	setup := MakeTestSetup(MakeFiveNodes())
 	LaunchConcurrentTasks(t, setup, []string{"n1","n2","n3","n4","n5"}, numTasks)
 }
+
+func TestReduceBasic(t *testing.T) {
+	setup := MakeTestSetup(MakeBasicTwoNodes())
+	shardNum := hoplite.GetShardForKey("tempipt1", 2)
+	hostOdsNode := "n1"
+	otherOdsNode := "n2"
+	if shardNum == 1 {
+		hostOdsNode = "n2"
+		otherOdsNode = "n1"
+	}
+	byteArr := GenIptBytesArr(5000, 500, true) //use large numbers to create a task delay
+	objMap := make(map[string][]byte)
+	objMap["tempipt1"] = byteArr
+	err := setup.ScheduleTask(hostOdsNode, "opt", 1, []string{"tempipt1"}, objMap)
+	assert.Nil(t, err)
+	//test promise on object "opt"
+	byteArr = GenIptBytesArr(5000, 505, false)
+	objMap = make(map[string][]byte)
+	objMap["tempipt2"] = byteArr
+	err = setup.ScheduleTask(otherOdsNode, "opt2", 3, []string{"tempipt2", "opt"}, objMap)
+	assert.Nil(t, err)
+	//retrieve result on original node
+	byteAns, err := setup.GetTaskAns(hostOdsNode, "opt2")
+	assert.Nil(t, err)
+	ans := hoplite.BytesToUInt64Arr(byteAns)
+	assert.True(t, len(ans) == 5000)
+
+}
