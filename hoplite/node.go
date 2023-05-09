@@ -79,6 +79,8 @@ func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) 
 		node.SimulateCalcTask(ctx, request.Args[0], request.ObjId, request.ObjIdToObj)
 	} else if request.TaskId == 2 {
 		node.SimulateCalcWithPromiseTask(ctx, request.Args[0], request.Args[1], request.ObjId, request.ObjIdToObj)
+	} else if request.TaskId == 3 {
+		node.ReduceBasicTask(ctx, request.Args, request.ObjId, request.ObjIdToObj)
 	}
 	return &proto.TaskResponse{}, nil
 }
@@ -131,7 +133,7 @@ func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId
 	chans := make(map[int]chan struct{})
 	for i := 1; i <= len(objIds); i++ {
 		chans[i] = make(chan struct{})
-		node.GetGlobalObject(ctx, objIds[i], objIdToObj, chans[i])
+		go node.GetGlobalObject(ctx, objIds[i-1], objIdToObj, chans[i])
 	}
 
 	optArr := make([]uint64, 0)
@@ -141,15 +143,18 @@ func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId
 			select {
 			case <-chans[i]:
 				//This node has access to the requested object --> start download
-				objBuff := node.GetGlobalObject(ctx, objIds[i], objIdToObj, nil)
+				objBuff := node.GetGlobalObject(ctx, objIds[i-1], objIdToObj, nil)
 				intArr := BytesToUInt64Arr(objBuff)
-				j := 1
+				j := 0
 				for ; j < len(optArr) && j < len(intArr); j++ {
 					optArr[j] = optArr[j] * intArr[j]
 				}
 				for ; j < len(intArr); j++ {
 					optArr = append(optArr, intArr[j])
 				}
+				reductions += 1
+			default:
+				continue
 			}
 		}
 	}
