@@ -59,14 +59,17 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				continue
 			} else {
 				ctx := context.Background()
+				scheduler.mu.Lock()
+				scheduler.nodeBusy[i] = true
 				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(objIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
+				scheduler.nodeBusy[i] = false
+				scheduler.mu.Unlock()
 				if err != nil {
 					continue
 				}
 				if response == nil {
 					continue
 				}
-				scheduler.nodeBusy[i] = true
 				return
 			}
 		}
@@ -86,8 +89,11 @@ func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
 			continue
 		}
 
+		scheduler.mu.Lock()
+		scheduler.nodeBusy[i] = true
 		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: strconv.Itoa(objIdCounter)})
 		scheduler.nodeBusy[i] = false
+		scheduler.mu.Unlock()
 
 		i += 1
 
