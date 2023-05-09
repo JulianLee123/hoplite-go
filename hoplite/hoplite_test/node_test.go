@@ -4,9 +4,10 @@ import (
 	//"fmt"
 	"testing"
 	"time"
-	/*"math/rand"
-	"strings"
+	"math/rand"
+	"fmt"
 	"sync"
+	/*"strings"
 	"runtime"*/
 
 	"hoplite.go/hoplite"
@@ -99,7 +100,7 @@ func TestTaskTwoNodesPromise(t *testing.T) {
 	err := setup.ScheduleTask(hostOdsNode, "opt", 1, []string{"tempipt1"}, objMap)
 	assert.Nil(t, err)
 	//test promise on object "opt"
-	byteArr = GenIptBytesArr(5000, 500,false)
+	byteArr = GenIptBytesArr(5000, 505,false)
 	objMap = make(map[string][]byte)
 	objMap["tempipt2"] = byteArr
 	err = setup.ScheduleTask(otherOdsNode, "opt2", 2, []string{"tempipt2", "opt"}, objMap)
@@ -111,4 +112,75 @@ func TestTaskTwoNodesPromise(t *testing.T) {
 	assert.True(t, len(ans) == 500)
 	assert.True(t, ans[0] == uint64(5*4952019383323))
 	time.Sleep(100 * time.Millisecond)
+}
+
+func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, numTasks int) {
+	//test processing 100 concurrent tasks and concurrent answer fetches, make sure answers are valid
+	expObjLenMap := make(map[string]int) //expected lengths for produced objects
+	for i := 0; i < numTasks; i++{
+		//schedule task asynchronous: don't need to launch separate goroutine
+		objToMake := fmt.Sprintf("%s%d", "obj", i)
+		nNum := rand.Int() % 200 + 1
+		nPrimes := rand.Int() % nNum + 1
+		byteArr := GenIptBytesArr(nNum, nPrimes,false)
+		objMap := make(map[string][]byte)
+		objMap["tempipt1"] = byteArr
+		if i < numTasks/2{
+			err := setup.ScheduleTask(nodeNames[rand.Int() % len(nodeNames)], objToMake, 1, []string{"tempipt1"}, objMap)
+			assert.Nil(t, err)
+			expObjLenMap[objToMake] = nPrimes
+		} else{
+			//for added complexity, schedule a series of tasks requiring promises on past tasks
+			promisedObj := fmt.Sprintf("%s%d", "obj", i - numTasks/2)
+			err := setup.ScheduleTask(nodeNames[rand.Int() % len(nodeNames)], objToMake, 2, []string{"tempipt1", promisedObj}, objMap)
+			assert.Nil(t, err)
+			if nNum < expObjLenMap[promisedObj]{
+				expObjLenMap[objToMake] = nNum
+			} else{
+				expObjLenMap[objToMake] = expObjLenMap[promisedObj]
+			}
+		}
+	}
+	//get answers back
+	var wg sync.WaitGroup
+	for i := 0; i < numTasks; i++ {
+		objToFind := fmt.Sprintf("%s%d", "obj", i)
+		wg.Add(1)
+		go func(i int) {
+			byteAns, err := setup.GetTaskAns(nodeNames[rand.Int() % len(nodeNames)], objToFind)
+			assert.Nil(t, err)
+			ans := hoplite.BytesToUInt64Arr(byteAns)
+			assert.True(t, len(ans) == expObjLenMap[objToFind])
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	//delete all objects to save space
+	for i := 0; i < numTasks; i++{
+		objToDel := fmt.Sprintf("%s%d", "obj", i)
+		err := setup.DeleteGlobalObj(nodeNames[rand.Int() % len(nodeNames)], objToDel)
+		assert.Nil(t, err)
+	}
+	time.Sleep(1000 * time.Millisecond)//wait for objects to be deleted
+	//make sure objects no longer there: expect GetTaskAns to stall
+	for i := 0; i < numTasks; i++ {
+		objToFind := fmt.Sprintf("%s%d", "obj", i)
+		go func(i int) {
+			_, _ = setup.GetTaskAns(nodeNames[rand.Int() % len(nodeNames)], objToFind)
+			assert.True(t, false)
+		}(i)
+	}
+	time.Sleep(1000 * time.Millisecond)//make sure objects aren't there
+}
+
+func TestTaskTwoNodesConcurrentTasks(t *testing.T) {
+	numTasks := 100
+	setup := MakeTestSetup(MakeBasicTwoNodes())
+	LaunchConcurrentTasks(t, setup, []string{"n1","n2"}, numTasks)
+}
+
+func TestTaskFiveNodesConcurrentTasks(t *testing.T) {
+	numTasks := 100
+	setup := MakeTestSetup(MakeFiveNodes())
+	LaunchConcurrentTasks(t, setup, []string{"n1","n2","n3","n4","n5"}, numTasks)
 }

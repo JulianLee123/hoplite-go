@@ -45,7 +45,7 @@ func GenIptBytesArr(n int, numPrime int, large bool) []byte {
 	for i := 0; i < numPrime; i++{
 		intArr = append(intArr, prime)
 	}
-	for j := 0; j < n; j++{
+	for j := numPrime; j < n; j++{
 		intArr = append(intArr, prime + 1)
 	}
 	return hoplite.UInt64ToBytesArr(intArr)
@@ -104,6 +104,20 @@ func MakeBasicTwoNodes() hoplite.ShardMapState {
 		ShardsToNodes: map[int][]string{
 			1: {"n1"},
 			2: {"n2"},
+		},
+	}
+}
+
+func MakeFiveNodes() hoplite.ShardMapState {
+	return hoplite.ShardMapState{
+		NumShards: 5,
+		Nodes:     makeNodeInfos(5),
+		ShardsToNodes: map[int][]string{
+			1: {"n1","n2"},
+			2: {"n2","n3"},
+			3: {"n3","n4"},
+			4: {"n4","n5"},
+			5: {"n5","n1"},
 		},
 	}
 }
@@ -186,4 +200,13 @@ func (ts *TestSetup) GetTaskAns(node string, objId string) ([]byte, error) {
 		return nil, err
 	}
 	return res.Res, err
+}
+
+func (ts *TestSetup) DeleteGlobalObj(node string, objId string) (error) {
+	gotClient, _ := ts.clientPool.GetClient(node)
+	if gotClient == nil {
+		return nil
+	}
+	_, err := gotClient.DeleteGlobalObj(ts.ctx, &proto.DeleteGlobalObjRequest{ObjectId: objId})
+	return err
 }

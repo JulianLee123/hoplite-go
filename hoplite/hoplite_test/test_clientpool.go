@@ -91,6 +91,7 @@ type TestClient struct {
 
 	taskResponse    *proto.TaskResponse
 	taskAnsResponse *proto.TaskAnsResponse
+	deleteGlobalObjResponse    *proto.DeleteGlobalObjResponse
 
 	latencyInjection *time.Duration
 }
@@ -238,4 +239,20 @@ func (c *TestClient) ScheduleTask(ctx context.Context, req *proto.TaskRequest, o
 		return c.taskResponse, nil
 	}
 	return c.server.ScheduleTask(ctx, req)
+}
+
+func (c *TestClient) DeleteGlobalObj(ctx context.Context, req *proto.DeleteGlobalObjRequest, opts ...grpc.CallOption) (*proto.DeleteGlobalObjResponse, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	atomic.AddUint64(&c.requestsSent, 1)
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.latencyInjection != nil {
+		time.Sleep(*c.latencyInjection)
+	}
+	if c.deleteGlobalObjResponse != nil {
+		return c.deleteGlobalObjResponse, nil
+	}
+	return c.server.DeleteGlobalObject(ctx, req)
 }

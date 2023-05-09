@@ -26,12 +26,13 @@ type HopliteClient interface {
 	OdsGet(ctx context.Context, in *OdsGetRequest, opts ...grpc.CallOption) (*OdsGetResponse, error)
 	OdsSet(ctx context.Context, in *OdsSetRequest, opts ...grpc.CallOption) (*OdsSetResponse, error)
 	OdsDelete(ctx context.Context, in *OdsDeleteRequest, opts ...grpc.CallOption) (*OdsDeleteResponse, error)
-	// RPC calls between nodes for Ods
+	// RPC calls between nodes for Ods: local field of view
 	BroadcastObj(ctx context.Context, in *BroadcastObjRequest, opts ...grpc.CallOption) (*BroadcastObjResponse, error)
 	DeleteObj(ctx context.Context, in *DeleteObjRequest, opts ...grpc.CallOption) (*DeleteObjResponse, error)
-	// RPC call between TaskScheduler and nodes
+	// RPC call between TaskScheduler and nodes: global field of view
 	ScheduleTask(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error)
 	GetTaskAns(ctx context.Context, in *TaskAnsRequest, opts ...grpc.CallOption) (*TaskAnsResponse, error)
+	DeleteGlobalObj(ctx context.Context, in *DeleteGlobalObjRequest, opts ...grpc.CallOption) (*DeleteGlobalObjResponse, error)
 }
 
 type hopliteClient struct {
@@ -105,6 +106,15 @@ func (c *hopliteClient) GetTaskAns(ctx context.Context, in *TaskAnsRequest, opts
 	return out, nil
 }
 
+func (c *hopliteClient) DeleteGlobalObj(ctx context.Context, in *DeleteGlobalObjRequest, opts ...grpc.CallOption) (*DeleteGlobalObjResponse, error) {
+	out := new(DeleteGlobalObjResponse)
+	err := c.cc.Invoke(ctx, "/hoplite.Hoplite/DeleteGlobalObj", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HopliteServer is the server API for Hoplite service.
 // All implementations must embed UnimplementedHopliteServer
 // for forward compatibility
@@ -113,12 +123,13 @@ type HopliteServer interface {
 	OdsGet(context.Context, *OdsGetRequest) (*OdsGetResponse, error)
 	OdsSet(context.Context, *OdsSetRequest) (*OdsSetResponse, error)
 	OdsDelete(context.Context, *OdsDeleteRequest) (*OdsDeleteResponse, error)
-	// RPC calls between nodes for Ods
+	// RPC calls between nodes for Ods: local field of view
 	BroadcastObj(context.Context, *BroadcastObjRequest) (*BroadcastObjResponse, error)
 	DeleteObj(context.Context, *DeleteObjRequest) (*DeleteObjResponse, error)
-	// RPC call between TaskScheduler and nodes
+	// RPC call between TaskScheduler and nodes: global field of view
 	ScheduleTask(context.Context, *TaskRequest) (*TaskResponse, error)
 	GetTaskAns(context.Context, *TaskAnsRequest) (*TaskAnsResponse, error)
+	DeleteGlobalObj(context.Context, *DeleteGlobalObjRequest) (*DeleteGlobalObjResponse, error)
 	mustEmbedUnimplementedHopliteServer()
 }
 
@@ -146,6 +157,9 @@ func (UnimplementedHopliteServer) ScheduleTask(context.Context, *TaskRequest) (*
 }
 func (UnimplementedHopliteServer) GetTaskAns(context.Context, *TaskAnsRequest) (*TaskAnsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskAns not implemented")
+}
+func (UnimplementedHopliteServer) DeleteGlobalObj(context.Context, *DeleteGlobalObjRequest) (*DeleteGlobalObjResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteGlobalObj not implemented")
 }
 func (UnimplementedHopliteServer) mustEmbedUnimplementedHopliteServer() {}
 
@@ -286,6 +300,24 @@ func _Hoplite_GetTaskAns_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Hoplite_DeleteGlobalObj_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGlobalObjRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HopliteServer).DeleteGlobalObj(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/hoplite.Hoplite/DeleteGlobalObj",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HopliteServer).DeleteGlobalObj(ctx, req.(*DeleteGlobalObjRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Hoplite_ServiceDesc is the grpc.ServiceDesc for Hoplite service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -320,6 +352,10 @@ var Hoplite_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTaskAns",
 			Handler:    _Hoplite_GetTaskAns_Handler,
+		},
+		{
+			MethodName: "DeleteGlobalObj",
+			Handler:    _Hoplite_DeleteGlobalObj_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

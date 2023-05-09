@@ -66,17 +66,25 @@ message DeleteObjRequest {
 message DeleteObjResponse {
 }
 
+message DeleteGlobalObjRequest {
+	string object_id = 1;
+}
+
+message DeleteGlobalObjResponse {
+}
+
 service Hoplite {
 	//RPC calls between nodes for Ods 
 	rpc OdsGet(OdsGetRequest) returns (OdsGetResponse);
 	rpc OdsSet(OdsSetRequest) returns (OdsSetResponse);
 	rpc OdsDelete(OdsDeleteRequest) returns (OdsDeleteResponse);
 
-	//RPC calls between nodes for Ods
+	//RPC calls between nodes for Ods: local field of view
 	rpc BroadcastObj(BroadcastObjRequest) returns (BroadcastObjResponse);
 	rpc DeleteObj(DeleteObjRequest) returns (DeleteObjResponse);
 
-	//RPC call between TaskScheduler and nodes 
+	//RPC call between TaskScheduler and nodes: global field of view
 	rpc ScheduleTask(TaskRequest) returns (TaskResponse);
 	rpc GetTaskAns(TaskAnsRequest) returns (TaskAnsResponse);
+	rpc DeleteGlobalObj(DeleteGlobalObjRequest) returns (DeleteGlobalObjResponse);
 }

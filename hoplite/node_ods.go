@@ -65,6 +65,16 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 							if ch != nil {
 								ch <- struct{}{}
 							}
+							mp := make(map[string]bool)
+							mp[node.nodeName] = true //storing a complete object
+							odsInfo := &proto.OdsInfo{Size: int64(len(obj)), LocationInfos: mp}
+							for true {
+								err := node.OdsSetReq(ctx, objId, odsInfo)
+								if err == nil {
+									break
+								}
+								time.Sleep(500 * time.Millisecond)
+							}
 							return response.Object
 						}
 					}
@@ -95,40 +105,38 @@ func (node *Node) PutGlobalObject(ctx context.Context, objId string, obj []byte)
 	}
 }
 
-func (node *Node) DeleteGlobalObject(ctx context.Context, objId string) error {
+func (node *Node) DeleteGlobalObject(ctx context.Context, request *proto.DeleteGlobalObjRequest) (*proto.DeleteGlobalObjResponse, error) {
 	//Deletes object from all nodes: sends a delete object request to all necessary nodes
 	//Error is set when we get a failure delete response from a node that
 	//should be storing this object according to ODS
+	objId := request.ObjectId
 	odsInfo := &proto.OdsInfo{}
 	for true {
-		odsInfo, wasFound, err := node.OdsGetReq(ctx, objId)
+		odsInfoInternal, wasFound, err := node.OdsGetReq(ctx, objId)
+		odsInfo = odsInfoInternal
 		if err == nil {
-			if !wasFound || odsInfo == nil {
+			if !wasFound || odsInfoInternal == nil {
 				//nothing to delete
-				return nil
+				return nil, nil
 			}
 			break
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-
-	node.OdsDeleteReq(ctx, objId, node.nodeName)
-
 	var retErr error = nil
 	for nodeWithInfo := range odsInfo.LocationInfos {
 		//send delete request to nodes with this object
-		for true {
-			client, err := node.clientPool.GetClient(nodeWithInfo)
-			if err == nil {
-				break
-			}
-			_, err = client.DeleteObj(ctx, &proto.DeleteObjRequest{ObjectId: objId}) //only send once: if it errors out, not t
-			if err != nil {
-				retErr = err
-			}
+		client, err := node.clientPool.GetClient(nodeWithInfo)
+		if err != nil {
+			continue
+		}
+		_, err = client.DeleteObj(ctx, &proto.DeleteObjRequest{ObjectId: objId}) //only send once: if it errors out, not t
+		if err != nil {
+			retErr = err
 		}
 	}
-	return retErr
+	node.OdsDeleteReq(ctx, objId, node.nodeName)
+	return &proto.DeleteGlobalObjResponse{}, retErr
 }
 
 func (node *Node) BroadcastLocalObject(ctx context.Context, request *proto.BroadcastObjRequest) (*proto.BroadcastObjResponse, error) {
@@ -290,8 +298,6 @@ func (node *Node) OdsGetRes(
 	logrus.WithFields(
 		logrus.Fields{"node": node.nodeName, "key": request.Key},
 	).Trace("node received Get() request")
-
-	//print(node.nodeName + " got ods get request\n")
 
 	key := request.Key
 	if key == "" {
