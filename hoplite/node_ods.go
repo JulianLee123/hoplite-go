@@ -50,14 +50,14 @@ func (node *Node) GetGlobalObject(ctx context.Context, objId string, objIdToObj 
 		//search globally
 		//find location in ODS
 		odsInfo, wasFound, err := node.OdsGetReq(ctx, objId)
-		if err != nil && wasFound && odsInfo != nil {
+		if err == nil && wasFound && odsInfo != nil {
 			for nodeWithInfo := range odsInfo.LocationInfos {
 				if odsInfo.LocationInfos[nodeWithInfo] {
 					//found node with complete copy: acquire it
 					client, err := node.clientPool.GetClient(nodeWithInfo)
-					if err != nil {
+					if err == nil {
 						response, err := client.BroadcastObj(ctx, &proto.BroadcastObjRequest{ObjectId: objId, Start: 0})
-						if err != nil {
+						if err == nil {
 							//save object in local object store and return it
 							node.localObjStore.mu.Lock()
 							defer node.localObjStore.mu.Unlock()

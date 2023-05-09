@@ -76,9 +76,9 @@ func (node *Node) Shutdown() {
 
 func (node *Node) ScheduleTask(ctx context.Context, request *proto.TaskRequest) (*proto.TaskResponse, error) {
 	if request.TaskId == 1 {
-		go node.SimulateCalcTask(ctx, request.Args[0], request.ObjId, request.ObjIdToObj)
+		node.SimulateCalcTask(ctx, request.Args[0], request.ObjId, request.ObjIdToObj)
 	} else if request.TaskId == 2 {
-		go node.SimulateCalcWithPromiseTask(ctx, request.Args[0], request.Args[1], request.ObjId, request.ObjIdToObj)
+		node.SimulateCalcWithPromiseTask(ctx, request.Args[0], request.Args[1], request.ObjId, request.ObjIdToObj)
 	}
 	return &proto.TaskResponse{}, nil
 }
@@ -110,7 +110,7 @@ func (node *Node) SimulateCalcTask(ctx context.Context, objId string, retObjId s
 func (node *Node) SimulateCalcWithPromiseTask(ctx context.Context, objId string, objId2 string, retObjId string, objIdToObj map[string][]byte) {
 	//Sample task testing promises: pairwise multiplies elements in obj1 and obj2
 	objBuff1 := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
-	objBuff2 := node.GetGlobalObject(ctx, objId, objIdToObj, nil)
+	objBuff2 := node.GetGlobalObject(ctx, objId2, objIdToObj, nil)
 	primesArr1 := BytesToUInt64Arr(objBuff1)
 	primesArr2 := BytesToUInt64Arr(objBuff2)
 	optArr := make([]uint64, 0)
@@ -165,6 +165,7 @@ func (node *Node) RetrieveTaskAns(ctx context.Context, request *proto.TaskAnsReq
 
 /*
 	fnv32 hash function taken from concurrent map implementation linked in assignment description
+
 (https://github.com/orcaman/concurrent-map/blob/master/concurrent_map.go#L345-L354)
 */
 func fnv32(key string) int {
