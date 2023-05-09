@@ -2,7 +2,9 @@ package hoplitetest
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -111,4 +113,61 @@ func TestBasicScheduleTwoNodes(t *testing.T) {
 		fmt.Println(primes[i])
 	}
 	assert.Equal(t, len(primes), 3)
+}
+
+func LaunchConcurrentTasksScheduler(t *testing.T, setup *TestSetup, numTasks int) {
+	doneCh := make(chan struct{})
+	scheduler := hoplite.MakeTaskScheduler(&setup.clientPool, doneCh, setup.shardMap.NumShards(),
+		setup.nodes)
+	//test processing 100 concurrent tasks and concurrent answer fetches, make sure answers are valid
+	expObjLenMap := make(map[string]int) //expected lengths for produced objects
+
+	outputObjects := make([]int, 0)
+	count := 0
+	for i := 0; i < numTasks; i++ {
+		//schedule task asynchronous: don't need to launch separate goroutine
+		nNum := rand.Int()%200 + 1
+		nPrimes := rand.Int()%nNum + 1
+		byteArr := GenIptBytesArr(nNum, nPrimes, false)
+		objMap := make(map[string][]byte)
+		objMap["tempipt1"] = byteArr
+		var toMake int
+		if scheduler.ObjIdCounter < numTasks/2 {
+			toMake = scheduler.ScheduleTask(1, []string{"tempipt1"}, objMap)
+			expObjLenMap[strconv.Itoa(toMake)] = nPrimes
+		} else {
+			//for added complexity, schedule a series of tasks requiring promises on past tasks
+			promisedObj := strconv.Itoa(outputObjects[count])
+			count += 1
+
+			toMake = scheduler.ScheduleTask(2, []string{"tempipt1", promisedObj}, objMap)
+			if nNum < expObjLenMap[promisedObj] {
+				expObjLenMap[strconv.Itoa(toMake)] = nNum
+			} else {
+				expObjLenMap[strconv.Itoa(toMake)] = expObjLenMap[promisedObj]
+			}
+		}
+		outputObjects = append(outputObjects, toMake)
+	}
+	//get answers back
+	var wg sync.WaitGroup
+	for i := 0; i < numTasks; i++ {
+		wg.Add(1)
+		go func(i int) {
+			target := strconv.Itoa(outputObjects[i])
+			byteAns, err := scheduler.RetrieveObject(target)
+			assert.Nil(t, err)
+			ans := hoplite.BytesToUInt64Arr(byteAns)
+
+			assert.True(t, len(ans) == expObjLenMap[target])
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestSchedulerFiveNodesConcurrent(t *testing.T) {
+	numTasks := 20
+	setup := MakeTestSetup(MakeFiveNodes())
+	LaunchConcurrentTasksScheduler(t, setup, numTasks)
 }

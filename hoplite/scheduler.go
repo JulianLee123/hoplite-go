@@ -11,16 +11,15 @@ import (
 )
 
 type TaskScheduler struct {
-	nodeBusy   []bool
-	objIds     []string //list of used objIds
-	clientPool ClientPool
-	shutdown   chan struct{}
-	mu         sync.RWMutex
-	numShards  int
-	nodes      map[string]*Node
+	nodeBusy     []bool
+	objIds       []string //list of used objIds
+	clientPool   ClientPool
+	shutdown     chan struct{}
+	mu           sync.RWMutex
+	numShards    int
+	nodes        map[string]*Node
+	ObjIdCounter int
 }
-
-var objIdCounter int = 100
 
 func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards int, nodes map[string]*Node) *TaskScheduler {
 
@@ -29,23 +28,24 @@ func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards in
 		busy[i] = false
 	}
 	scheduler := TaskScheduler{
-		nodeBusy:   busy,
-		objIds:     make([]string, 0),
-		clientPool: clientPool,
-		shutdown:   doneCh,
-		numShards:  numShards,
-		nodes:      nodes,
+		nodeBusy:     busy,
+		objIds:       make([]string, 0),
+		clientPool:   clientPool,
+		shutdown:     doneCh,
+		numShards:    numShards,
+		nodes:        nodes,
+		ObjIdCounter: 1,
 	}
 	return &scheduler
 }
 
 func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args []string, objIdToObj map[string][]byte) int {
-	objIdCounter += 1
-	go scheduler.ScheduleTaskHelper(taskId, args, objIdToObj, objIdCounter)
-	return objIdCounter
+	scheduler.ObjIdCounter += 1
+	go scheduler.ScheduleTaskHelper(taskId, args, objIdToObj, scheduler.ObjIdCounter)
+	return scheduler.ObjIdCounter
 }
 
-func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, objIdToObj map[string][]byte, objIdCounter int) {
+func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, objIdToObj map[string][]byte, ObjIdCounter int) {
 
 	for {
 		var i int = 0
@@ -59,13 +59,9 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				continue
 			} else {
 				ctx := context.Background()
-				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = true
-				scheduler.mu.Unlock()
-				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(objIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
-				scheduler.mu.Lock()
+				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(ObjIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
 				scheduler.nodeBusy[i] = false
-				scheduler.mu.Unlock()
 				if err != nil {
 					continue
 				}
