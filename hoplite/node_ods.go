@@ -192,6 +192,7 @@ func (node *Node) OdsGetReq(ctx context.Context, key string) (*proto.OdsInfo, bo
 			iterator += 1
 			continue
 		} else {
+			//print(node.nodeName + " is searching ods for " + key + " in " + targetNodes[randNode] + "\n")
 			response, err = client.OdsGet(ctx, &proto.OdsGetRequest{Key: key})
 			if err != nil {
 				iterator += 1
@@ -200,7 +201,6 @@ func (node *Node) OdsGetReq(ctx context.Context, key string) (*proto.OdsInfo, bo
 			break
 		}
 	}
-
 	return response.Value, response.WasFound, nil
 }
 
@@ -291,6 +291,8 @@ func (node *Node) OdsGetRes(
 		logrus.Fields{"node": node.nodeName, "key": request.Key},
 	).Trace("node received Get() request")
 
+	//print(node.nodeName + " got ods get request\n")
+
 	key := request.Key
 	if key == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty key error")
@@ -315,7 +317,6 @@ func (node *Node) OdsGetRes(
 	if !exists {
 		return &proto.OdsGetResponse{Value: nil, WasFound: false}, nil
 	}
-
 	return &proto.OdsGetResponse{Value: val, WasFound: true}, nil
 }
 
@@ -364,7 +365,7 @@ func (node *Node) OdsSetRes(
 	if node.ods.shard[targetShard].data[key].Size < request.Value.Size {
 		node.ods.shard[targetShard].data[key].Size = request.Value.Size
 	}
-
+	//print(node.nodeName + " has updated ods info for " + key + " stored on " + nodeToAdd + "\n")
 	return &proto.OdsSetResponse{}, nil
 }
 

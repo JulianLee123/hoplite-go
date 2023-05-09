@@ -33,6 +33,24 @@ func GetShardForKey(key string, numShards int) int {
 	return int(hasher.Sum32())%numShards + 1
 }
 
+func GenIptBytesArr(n int, numPrime int, large bool) []byte {
+	//if large set, uses large numbers to add latency to the task (takes longer to process)
+	//note: doesn't matter we're using the same prime over and over; not necessary to use distinct primes/composites
+	//to demonstrate our system works
+	var intArr []uint64
+	prime := uint64(5)
+	if large{
+		prime = uint64(4952019383323)
+	}
+	for i := 0; i < numPrime; i++{
+		intArr = append(intArr, prime)
+	}
+	for j := 0; j < n; j++{
+		intArr = append(intArr, prime + 1)
+	}
+	return hoplite.UInt64ToBytesArr(intArr)
+}
+
 func MakeTestSetup(shardMap hoplite.ShardMapState) *TestSetup {
 	logrus.SetLevel(logrus.DebugLevel)
 	setup := TestSetup{
@@ -82,7 +100,7 @@ func MakeBasicMultiShard() hoplite.ShardMapState {
 func MakeBasicTwoNodes() hoplite.ShardMapState {
 	return hoplite.ShardMapState{
 		NumShards: 2,
-		Nodes:     makeNodeInfos(1),
+		Nodes:     makeNodeInfos(2),
 		ShardsToNodes: map[int][]string{
 			1: {"n1"},
 			2: {"n2"},
