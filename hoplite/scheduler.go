@@ -46,11 +46,13 @@ func (scheduler *TaskScheduler) ScheduleTask(taskId int32, args []string, objIdT
 }
 
 func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, objIdToObj map[string][]byte, ObjIdCounter int) {
-
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
 	for {
 		var i int = 0
 		for key := range scheduler.nodes {
 			if scheduler.nodeBusy[i%len(scheduler.nodes)] {
+				i += 1
 				continue
 			}
 			client, err := scheduler.clientPool.GetClient(key)
@@ -58,14 +60,16 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				i += 1
 				continue
 			} else {
-				ctx := context.Background()
+
 				scheduler.nodeBusy[i] = true
 				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(ObjIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
 				scheduler.nodeBusy[i] = false
 				if err != nil {
+					i += 1
 					continue
 				}
 				if response == nil {
+					i += 1
 					continue
 				}
 				return

@@ -167,7 +167,7 @@ func LaunchConcurrentTasksScheduler(t *testing.T, setup *TestSetup, numTasks int
 }
 
 func TestSchedulerFiveNodesConcurrent(t *testing.T) {
-	numTasks := 20
+	numTasks := 50
 	setup := MakeTestSetup(MakeFiveNodes())
 	LaunchConcurrentTasksScheduler(t, setup, numTasks)
 }
