@@ -109,7 +109,7 @@ func LaunchConcurrentTasksScheduler(t *testing.T, setup *TestSetup, numTasks int
 	doneCh := make(chan struct{})
 	scheduler := hoplite.MakeTaskScheduler(&setup.clientPool, doneCh, setup.shardMap.NumShards(),
 		setup.nodes)
-	//test processing 100 concurrent tasks and concurrent answer fetches, make sure answers are valid
+	//test processing concurrent tasks and concurrent answer fetches, make sure answers are valid
 	expObjLenMap := make(map[string]int) //expected lengths for produced objects
 
 	outputObjects := make([]int, 0)

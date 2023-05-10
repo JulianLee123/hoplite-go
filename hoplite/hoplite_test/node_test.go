@@ -170,7 +170,7 @@ func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, n
 		err := setup.DeleteGlobalObj(nodeNames[rand.Int()%len(nodeNames)], objToDel)
 		assert.Nil(t, err)
 	}
-	time.Sleep(1000 * time.Millisecond) //wait for objects to be deleted
+	time.Sleep(500 * time.Millisecond) //wait for objects to be deleted
 	//make sure objects no longer there: expect GetTaskAns to stall
 	for i := 0; i < numTasks; i++ {
 		objToFind := fmt.Sprintf("%s%d", "obj", i)
@@ -179,7 +179,7 @@ func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, n
 			assert.True(t, false)
 		}(i)
 	}
-	time.Sleep(1000 * time.Millisecond) //make sure objects aren't there
+	time.Sleep(500 * time.Millisecond) //make sure objects aren't there
 }
 
 func TestTaskOneNodeConcurrentTasks(t *testing.T) {

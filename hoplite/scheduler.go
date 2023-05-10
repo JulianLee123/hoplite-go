@@ -86,24 +86,38 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 }
 
 func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
+	//synchronous: runs until object can be retrieved
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
 	var i int = 0
-	for key := range scheduler.nodes {
-		client, err := scheduler.clientPool.GetClient(key)
-		if err != nil {
+	for true {
+		for key := range scheduler.nodes {
+			scheduler.mu.RLock()
+			if scheduler.nodeBusy[i] == true {
+				scheduler.mu.RUnlock()
+				continue
+			}
+			scheduler.mu.RUnlock()
+			client, err := scheduler.clientPool.GetClient(key)
+			if err != nil {
+				i += 1
+				continue
+			}
+			scheduler.mu.Lock()
+			scheduler.nodeBusy[i] = true
+			scheduler.mu.Unlock()
+			response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: objId})
+			scheduler.mu.Lock()
+			scheduler.nodeBusy[i] = false
+			scheduler.mu.Unlock()
 			i += 1
-			continue
-		}
-		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: objId})
 
-		i += 1
-
-		if err == nil {
-			return response.Res, nil
+			if err == nil {
+				return response.Res, nil
+			}
+			// If there was an error continue to the next node
 		}
-		// If there was an error continue to the next node
 	}
 
 	// If all nodes failed, return an error

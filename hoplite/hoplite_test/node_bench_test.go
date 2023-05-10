@@ -60,7 +60,7 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 		objToDel := fmt.Sprintf("%s%d", "obj", i)
 		setup.DeleteGlobalObj(nodeNames[rand.Int()%len(nodeNames)], objToDel)
 	}
-	time.Sleep(1000 * time.Millisecond) //wait for objects to be deleted
+	time.Sleep(400 * time.Millisecond) //wait for objects to be deleted
 	//make sure objects no longer there: expect GetTaskAns to stall
 	for i := 0; i < numTasks; i++ {
 		objToFind := fmt.Sprintf("%s%d", "obj", i)
@@ -68,7 +68,7 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 			setup.GetTaskAns(nodeNames[rand.Int()%len(nodeNames)], objToFind)
 		}(i)
 	}
-	time.Sleep(1000 * time.Millisecond) //make sure objects aren't there
+	time.Sleep(400 * time.Millisecond) //make sure objects aren't there
 }
 
 func BenchmarkOneNodeConcurrent(b *testing.B) {
