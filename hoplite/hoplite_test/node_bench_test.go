@@ -10,19 +10,16 @@ import (
 	"hoplite.go/hoplite"
 )
 
-func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTasks int, taskIsReduce bool) {
+func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTasks int, slowTasks bool) {
 	targetTaskId := 2
-	if taskIsReduce {
-		targetTaskId = 3
-	}
-	//test processing 100 concurrent tasks and concurrent answer fetches, make sure answers are valid
+	//test processing n concurrent tasks and concurrent answer fetches, make sure answers are valid
 	expObjLenMap := make(map[string]int) //expected lengths for produced objects
 	for i := 0; i < numTasks; i++ {
 		//schedule task asynchronous: don't need to launch separate goroutine
 		objToMake := fmt.Sprintf("%s%d", "obj", i)
-		nNum := rand.Int()%200 + 1
+		nNum := rand.Int()%100 + 500
 		nPrimes := rand.Int()%nNum + 1
-		byteArr := GenIptBytesArr(nNum, nPrimes, false)
+		byteArr := GenIptBytesArr(nNum, nPrimes, slowTasks)
 		objMap := make(map[string][]byte)
 		objMap["tempipt1"] = byteArr
 		if i < numTasks/2 {
@@ -39,10 +36,6 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 			}
 		}
 	}
-	if taskIsReduce {
-		return //not sure how to test answers for reduce
-	}
-
 	//get answers back
 	var wg sync.WaitGroup
 	for i := 0; i < numTasks; i++ {
@@ -51,6 +44,7 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 		go func(i int) {
 			byteAns, _ := setup.GetTaskAns(nodeNames[rand.Int()%len(nodeNames)], objToFind)
 			hoplite.BytesToUInt64Arr(byteAns)
+			print(i)
 			wg.Done()
 		}(i)
 	}
@@ -71,26 +65,18 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 	time.Sleep(400 * time.Millisecond) //make sure objects aren't there
 }
 
-func BenchmarkOneNodeConcurrent(b *testing.B) {
+func BenchmarkConcurrentFastTasksFiveNodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		numTasks := 100
-		setup := MakeTestSetup(MakeBasicOneShard())
-		LaunchConcurrentTasksBenchmark(setup, []string{"n1"}, numTasks, false)
-	}
-}
-
-func BenchmarkTwoNodeConcurrent(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		numTasks := 100
-		setup := MakeTestSetup(MakeBasicTwoNodes())
-		LaunchConcurrentTasksBenchmark(setup, []string{"n1", "n2"}, numTasks, false)
-	}
-}
-
-func BenchmarkFiveNodeConcurrent(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		numTasks := 100
-		setup := MakeTestSetup(MakeFiveNodes())
+		numTasks := 12
+		setup := MakeTestSetup(MakeBasicFiveNodes())
 		LaunchConcurrentTasksBenchmark(setup, []string{"n1", "n2", "n3", "n4", "n5"}, numTasks, false)
+	}
+}
+
+func BenchmarkConcurrentSlowTasksFiveNodes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		numTasks := 12
+		setup := MakeTestSetup(MakeBasicFiveNodes())
+		LaunchConcurrentTasksBenchmark(setup, []string{"n1", "n2", "n3", "n4", "n5"}, numTasks, true)
 	}
 }

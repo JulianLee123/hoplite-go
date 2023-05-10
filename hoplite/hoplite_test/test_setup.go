@@ -108,6 +108,20 @@ func MakeBasicTwoNodes() hoplite.ShardMapState {
 	}
 }
 
+func MakeBasicFiveNodes() hoplite.ShardMapState {
+	return hoplite.ShardMapState{
+		NumShards: 5,
+		Nodes:     makeNodeInfos(5),
+		ShardsToNodes: map[int][]string{
+			1: {"n1"},
+			2: {"n2"},
+			3: {"n3"},
+			4: {"n4"},
+			5: {"n5"},
+		},
+	}
+}
+
 func MakeFiveNodes() hoplite.ShardMapState {
 	return hoplite.ShardMapState{
 		NumShards: 5,
