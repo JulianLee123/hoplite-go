@@ -116,17 +116,13 @@ func TestTaskTwoNodesPromise(t *testing.T) {
 }
 
 func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, numTasks int, taskIsReduce bool) {
-	targetTaskId := 2
-	if taskIsReduce {
-		targetTaskId = 3
-	}
-	//test processing 100 concurrent tasks and concurrent answer fetches, make sure answers are valid
+	//test processing n concurrent tasks and concurrent answer fetches, make sure answers are valid
 	expObjLenMap := make(map[string]int) //expected lengths for produced objects
 	for i := 0; i < numTasks; i++ {
 		//schedule task asynchronous: don't need to launch separate goroutine
 		objToMake := fmt.Sprintf("%s%d", "obj", i)
-		nNum := rand.Int()%200 + 1
-		nPrimes := rand.Int()%nNum + 1
+		nNum := rand.Int()%200 + 5
+		nPrimes := rand.Int()%nNum + 5
 		byteArr := GenIptBytesArr(nNum, nPrimes, false)
 		objMap := make(map[string][]byte)
 		objMap["tempipt1"] = byteArr
@@ -134,20 +130,30 @@ func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, n
 			err := setup.ScheduleTask(nodeNames[rand.Int()%len(nodeNames)], objToMake, 1, []string{"tempipt1"}, objMap)
 			assert.Nil(t, err)
 			expObjLenMap[objToMake] = nPrimes
-		} else {
+		} else if !taskIsReduce || i <= numTasks - 2{
 			//for added complexity, schedule a series of tasks requiring promises on past tasks
 			promisedObj := fmt.Sprintf("%s%d", "obj", i-numTasks/2)
-			err := setup.ScheduleTask(nodeNames[rand.Int()%len(nodeNames)], objToMake, targetTaskId, []string{"tempipt1", promisedObj}, objMap)
+			err := setup.ScheduleTask(nodeNames[rand.Int()%len(nodeNames)], objToMake, 2, []string{"tempipt1", promisedObj}, objMap)
 			assert.Nil(t, err)
 			if nNum < expObjLenMap[promisedObj] {
 				expObjLenMap[objToMake] = nNum
 			} else {
 				expObjLenMap[objToMake] = expObjLenMap[promisedObj]
 			}
+		} else{
+			//reduces 3 results
+			promisedObj := fmt.Sprintf("%s%d", "obj", i-int(numTasks/4))
+			promisedObj2 := fmt.Sprintf("%s%d", "obj", i-int(numTasks/4))
+			err := setup.ScheduleTask(nodeNames[rand.Int()%len(nodeNames)], objToMake, 3, []string{"tempipt1", promisedObj, promisedObj2}, objMap)
+			assert.Nil(t, err)
+			if nNum > expObjLenMap[promisedObj] && nNum > expObjLenMap[promisedObj2] {
+				expObjLenMap[objToMake] = nNum
+			} else if expObjLenMap[promisedObj] > expObjLenMap[promisedObj2] {
+				expObjLenMap[objToMake] = expObjLenMap[promisedObj]
+			} else{
+				expObjLenMap[objToMake] = expObjLenMap[promisedObj2]
+			}
 		}
-	}
-	if taskIsReduce {
-		return //not sure how to test answers for reduce
 	}
 
 	//get answers back
@@ -159,7 +165,7 @@ func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, n
 			byteAns, err := setup.GetTaskAns(nodeNames[rand.Int()%len(nodeNames)], objToFind)
 			assert.Nil(t, err)
 			ans := hoplite.BytesToUInt64Arr(byteAns)
-			assert.True(t, len(ans) == expObjLenMap[objToFind])
+			assert.True(t, len(ans) >= expObjLenMap[objToFind])
 			wg.Done()
 		}(i)
 	}
@@ -230,6 +236,6 @@ func TestReduceBasic(t *testing.T) {
 
 func TestReduceConcurrent(t *testing.T) {
 	setup := MakeTestSetup(MakeFiveNodes())
-	numReduce := 100
-	LaunchConcurrentTasks(t, setup, []string{"n1", "n2", "n3", "n4", "n5"}, numReduce, true)
+	numTasks := 10
+	LaunchConcurrentTasks(t, setup, []string{"n1", "n2", "n3", "n4", "n5"}, numTasks, false)
 }

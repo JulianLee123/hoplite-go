@@ -44,7 +44,6 @@ func LaunchConcurrentTasksBenchmark(setup *TestSetup, nodeNames []string, numTas
 		go func(i int) {
 			byteAns, _ := setup.GetTaskAns(nodeNames[rand.Int()%len(nodeNames)], objToFind)
 			hoplite.BytesToUInt64Arr(byteAns)
-			print(i)
 			wg.Done()
 		}(i)
 	}

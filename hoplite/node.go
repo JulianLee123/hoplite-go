@@ -127,7 +127,6 @@ func (node *Node) SimulateCalcWithPromiseTask(ctx context.Context, objId string,
 func (node *Node) ReduceBasicTask(ctx context.Context, objIds []string, retObjId string, objIdToObj map[string][]byte) {
 	//Reduces the provided objects: A[i] in the output is the product of the ith entries of the provided objects (for all
 	//objects for which the ith entry exists)
-	//Example of how useful work can be done even when object is waiting to download more object info from other nodes
 
 	//Channel will be set to true once object is available (if it's on another node, then once it's broadcasted)
 	chans := make(map[int]chan struct{})

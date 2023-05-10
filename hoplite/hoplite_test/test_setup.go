@@ -200,7 +200,12 @@ func (ts *TestSetup) ScheduleTask(node string, objId string, taskId int, args []
 	if gotClient == nil {
 		return nil
 	}
-	_, err := gotClient.ScheduleTask(ts.ctx, &proto.TaskRequest{ObjId: objId, TaskId: int32(taskId), Args: args, ObjIdToObj: objIdToObj})
+	errChan := make(chan error)
+	go func(errChan chan error) {
+		_, err := gotClient.ScheduleTask(ts.ctx, &proto.TaskRequest{ObjId: objId, TaskId: int32(taskId), Args: args, ObjIdToObj: objIdToObj})
+		errChan <- err
+	}(errChan)
+	err := <-errChan
 	return err
 }
 
