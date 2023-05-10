@@ -51,7 +51,10 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 	for {
 		var i int = 0
 		for key := range scheduler.nodes {
-			if scheduler.nodeBusy[i%len(scheduler.nodes)] {
+			scheduler.mu.RLock()
+			busyStatus := scheduler.nodeBusy[i]
+			scheduler.mu.RUnlock()
+			if busyStatus {
 				i += 1
 				continue
 			}
@@ -60,10 +63,13 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				i += 1
 				continue
 			} else {
-
+				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = true
+				scheduler.mu.Unlock()
 				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(ObjIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
+				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = false
+				scheduler.mu.Unlock()
 				if err != nil {
 					i += 1
 					continue
@@ -77,22 +83,20 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-
 }
 
 func (scheduler *TaskScheduler) RetrieveObject(objId string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
-	var i int = 0
 
+	var i int = 0
 	for key := range scheduler.nodes {
 		client, err := scheduler.clientPool.GetClient(key)
 		if err != nil {
+			i += 1
 			continue
 		}
-
 		response, err := client.GetTaskAns(ctx, &proto.TaskAnsRequest{ObjId: objId})
-		scheduler.nodeBusy[i] = false
 
 		i += 1
 

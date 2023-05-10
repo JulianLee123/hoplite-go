@@ -1,7 +1,6 @@
 package hoplitetest
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -39,9 +38,6 @@ func TestBasicScheduleOneNode(t *testing.T) {
 	assert.Nil(t, err)
 
 	primes := hoplite.BytesToUInt64Arr(val)
-	for i := range primes {
-		fmt.Println(primes[i])
-	}
 	assert.Equal(t, len(primes), 3)
 }
 
@@ -74,9 +70,6 @@ func TestBasicScheduleOneNodeMultiShard(t *testing.T) {
 	assert.Nil(t, err)
 
 	primes := hoplite.BytesToUInt64Arr(val)
-	for i := range primes {
-		fmt.Println(primes[i])
-	}
 	assert.Equal(t, len(primes), 3)
 }
 
@@ -109,9 +102,6 @@ func TestBasicScheduleTwoNodes(t *testing.T) {
 	assert.Nil(t, err)
 
 	primes := hoplite.BytesToUInt64Arr(val)
-	for i := range primes {
-		fmt.Println(primes[i])
-	}
 	assert.Equal(t, len(primes), 3)
 }
 
@@ -149,6 +139,7 @@ func LaunchConcurrentTasksScheduler(t *testing.T, setup *TestSetup, numTasks int
 		}
 		outputObjects = append(outputObjects, toMake)
 	}
+	time.Sleep(1000 * time.Millisecond)
 	//get answers back
 	var wg sync.WaitGroup
 	for i := 0; i < numTasks; i++ {

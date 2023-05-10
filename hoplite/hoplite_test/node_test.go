@@ -182,6 +182,12 @@ func LaunchConcurrentTasks(t *testing.T, setup *TestSetup, nodeNames []string, n
 	time.Sleep(1000 * time.Millisecond) //make sure objects aren't there
 }
 
+func TestTaskOneNodeConcurrentTasks(t *testing.T) {
+	numTasks := 100
+	setup := MakeTestSetup(MakeBasicOneShard())
+	LaunchConcurrentTasks(t, setup, []string{"n1"}, numTasks, false)
+}
+
 func TestTaskTwoNodesConcurrentTasks(t *testing.T) {
 	numTasks := 100
 	setup := MakeTestSetup(MakeBasicTwoNodes())
