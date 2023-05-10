@@ -21,6 +21,11 @@ type TaskScheduler struct {
 	ObjIdCounter int
 }
 
+type Response struct {
+	res *proto.TaskResponse
+	err error
+}
+
 func MakeTaskScheduler(clientPool ClientPool, doneCh chan struct{}, numShards int, nodes map[string]*Node) *TaskScheduler {
 
 	busy := make([]bool, len(nodes))
@@ -66,19 +71,32 @@ func (scheduler *TaskScheduler) ScheduleTaskHelper(taskId int32, args []string, 
 				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = true
 				scheduler.mu.Unlock()
-				response, err := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(ObjIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
+
+				currentChannel := make(chan Response, 1)
+				go func() {
+					response, _ := client.ScheduleTask(ctx, &proto.TaskRequest{ObjId: strconv.Itoa(ObjIdCounter), TaskId: taskId, Args: args, ObjIdToObj: objIdToObj})
+					currentChannel <- Response{response, err}
+				}()
+
 				scheduler.mu.Lock()
 				scheduler.nodeBusy[i] = false
 				scheduler.mu.Unlock()
-				if err != nil {
+
+				select {
+				case res := <-currentChannel:
+					if res.err != nil {
+						i += 1
+						continue
+					}
+					if res.res == nil {
+						i += 1
+						continue
+					}
+					return
+				case <-time.After(1000 * time.Millisecond):
 					i += 1
 					continue
 				}
-				if response == nil {
-					i += 1
-					continue
-				}
-				return
 			}
 		}
 		time.Sleep(10 * time.Millisecond)
